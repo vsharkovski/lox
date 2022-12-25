@@ -20,7 +20,8 @@ class Parser(
     /*
     Expression grammar:
         expression     → block ;
-        block          → equality ( "," block )* ;
+        block          → ternary ( "," ternary )* ;
+        ternary        → equality ( "?:" equality )* ;
         equality       → comparison ( ( "!=" | "==" ) comparison )* ;
         comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
         term           → factor ( ( "-" | "+" ) factor )* ;
@@ -35,7 +36,10 @@ class Parser(
         parseBlock()
 
     private val parseBlock: () -> Expr =
-        parseLeftAssociativeBinary({ parseEquality() }, COMMA)
+        parseLeftAssociativeBinary({ parseTernary() }, COMMA)
+
+    private val parseTernary: () -> Expr =
+        parseLeftAssociativeBinary({ parseEquality() }, QUESTION_COLON)
 
     private val parseEquality: () -> Expr =
         parseLeftAssociativeBinary({ parseComparison() }, BANG_EQUAL, EQUAL_EQUAL)

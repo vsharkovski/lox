@@ -10,6 +10,7 @@ enum class TokenType {
     EQUAL, EQUAL_EQUAL,
     GREATER, GREATER_EQUAL,
     LESS, LESS_EQUAL,
+    QUESTION, QUESTION_COLON,
 
     // Literals.
     IDENTIFIER, STRING, NUMBER,

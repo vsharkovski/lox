@@ -64,6 +64,7 @@ class Scanner(
             } else {
                 addToken(SLASH)
             }
+            '?' -> addToken(if (advanceIfMatching(':')) QUESTION_COLON else QUESTION)
             ' ', '\r', '\t' -> Unit
             '\n' -> line++
             '"' -> scanString()
