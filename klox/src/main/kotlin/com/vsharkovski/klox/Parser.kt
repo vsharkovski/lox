@@ -17,8 +17,25 @@ class Parser(
         }
     }
 
+    /*
+    Expression grammar:
+        expression     → block ;
+        block          → equality ( "," block )* ;
+        equality       → comparison ( ( "!=" | "==" ) comparison )* ;
+        comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+        term           → factor ( ( "-" | "+" ) factor )* ;
+        factor         → unary ( ( "/" | "*" ) unary )* ;
+        unary          → ( "!" | "-" ) unary
+                       | primary ;
+        primary        → NUMBER | STRING | "true" | "false" | "nil"
+                       | "(" expression ")" ;
+     */
+
     private fun parseExpression(): Expr =
-        parseEquality()
+        parseBlock()
+
+    private val parseBlock: () -> Expr =
+        parseLeftAssociativeBinary({ parseEquality() }, COMMA)
 
     private val parseEquality: () -> Expr =
         parseLeftAssociativeBinary({ parseComparison() }, BANG_EQUAL, EQUAL_EQUAL)
