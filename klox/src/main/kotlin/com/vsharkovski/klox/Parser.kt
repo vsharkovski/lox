@@ -86,7 +86,7 @@ class Parser(
     /**
      * Parse a left-associative binary expression group.
      * This corresponds to a grammar rule of the form:
-     *  a → b ( (type_1 | type_2 | ... | type_k) b)* ;
+     *  a → b ( ( type_1 | type_2 | ... | type_k ) b )* ;
      * Where 'a' is the current group, 'b' is the next higher precedence group,
      * and type_1, ..., type_k are the token types to match for this group.
      */
