@@ -35,36 +35,32 @@ class Parser(
     private fun parseExpression(): Expr =
         parseBlock()
 
-    private val parseBlock: () -> Expr =
+    private fun parseBlock(): Expr =
         parseLeftAssociativeBinary({ parseTernary() }, COMMA)
 
-    private val parseTernary: () -> Expr =
+    private fun parseTernary(): Expr =
         parseLeftAssociativeBinary({ parseEquality() }, QUESTION_COLON)
 
-    private val parseEquality: () -> Expr =
+    private fun parseEquality(): Expr =
         parseLeftAssociativeBinary({ parseComparison() }, BANG_EQUAL, EQUAL_EQUAL)
 
-    private val parseComparison: () -> Expr =
+    private fun parseComparison(): Expr =
         parseLeftAssociativeBinary({ parseTerm() }, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)
 
-    private val parseTerm: () -> Expr =
+    private fun parseTerm(): Expr =
         parseLeftAssociativeBinary({ parseFactor() }, MINUS, PLUS)
 
-    private val parseFactor: () -> Expr =
+    private fun parseFactor(): Expr =
         parseLeftAssociativeBinary({ parseUnary() }, SLASH, STAR)
 
-    private val parseUnary: () -> Expr = {
+    private fun parseUnary(): Expr =
         if (advanceIfMatching(BANG, MINUS)) {
             val operator = previous()
-            val right = parseUnaryHelper()
+            val right = parseUnary()
             Expr.Unary(operator, right)
         } else {
             parsePrimary()
         }
-    }
-
-    private fun parseUnaryHelper(): Expr =
-        parseUnary()
 
     private fun parsePrimary(): Expr {
         val curr = advance()
@@ -87,10 +83,17 @@ class Parser(
         }
     }
 
+    /**
+     * Parse a left-associative binary expression group.
+     * This corresponds to a grammar rule of the form:
+     *  a → b ( (type_1 | type_2 | ... | type_k) b)* ;
+     * Where 'a' is the current group, 'b' is the next higher precedence group,
+     * and type_1, ..., type_k are the token types to match for this group.
+     */
     private fun parseLeftAssociativeBinary(
         nextHigherPrecedenceParseFn: () -> Expr,
         vararg types: TokenType
-    ): () -> Expr = {
+    ): Expr {
         var expr = nextHigherPrecedenceParseFn()
 
         while (advanceIfMatching(*types)) {
@@ -99,7 +102,7 @@ class Parser(
             expr = Expr.Binary(expr, operator, right)
         }
 
-        expr
+        return expr
     }
 
     private fun advance(): Token {
