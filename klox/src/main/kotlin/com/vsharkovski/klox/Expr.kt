@@ -13,6 +13,7 @@ sealed interface Expr {
         //        fun visitLogicalExpr(expr: Logical): R
 //        fun visitSetExpr(expr: Set): R
 //        fun visitSuperExpr(expr: Super): R
+        fun visitTernaryExpr(expr: Ternary): R
 //        fun visitThisExpr(expr: This): R
         fun visitUnaryExpr(expr: Unary): R
 //        fun visitVariableExpr(expr: Variable): R
@@ -93,6 +94,17 @@ sealed interface Expr {
     //    override fun <R> accept(visitor: Visitor<R>): R =
     //        visitor.visitSuperExpr(this)
     //}
+
+    data class Ternary(
+        val left: Expr,
+        val firstOperator: Token,
+        val middle: Expr,
+        val secondOperator: Token,
+        val right: Expr
+    ) : Expr {
+        override fun <R> accept(visitor: Visitor<R>): R =
+            visitor.visitTernaryExpr(this)
+    }
 
     //data class This(
     //    val keyword: Token

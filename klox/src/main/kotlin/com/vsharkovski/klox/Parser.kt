@@ -21,7 +21,7 @@ class Parser(
     Expression grammar:
         expression     → block ;
         block          → ternary ( "," ternary )* ;
-        ternary        → equality ( "?:" equality )* ;
+        ternary        → equality ( "?" equality ":" equality )* ;
         equality       → comparison ( ( "!=" | "==" ) comparison )* ;
         comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
         term           → factor ( ( "-" | "+" ) factor )* ;
@@ -38,8 +38,26 @@ class Parser(
     private fun parseBlock(): Expr =
         parseLeftAssociativeBinary({ parseTernary() }, COMMA)
 
-    private fun parseTernary(): Expr =
-        parseLeftAssociativeBinary({ parseEquality() }, QUESTION_COLON)
+    private fun parseTernary(): Expr {
+        var expr = parseEquality()
+
+        while (advanceIfMatching(QUESTION)) {
+            val firstOperator = previous()
+            val middleExpr = parseEquality()
+
+            if (advanceIfMatching(COLON)) {
+                val secondOperator = previous()
+                val rightExpr = parseEquality()
+                expr = Expr.Ternary(expr, firstOperator, middleExpr, secondOperator, rightExpr)
+            } else {
+                // Not a proper ternary operator, so interpret it as binary and stop looking.
+                expr = Expr.Binary(expr, firstOperator, middleExpr)
+                break
+            }
+        }
+
+        return expr
+    }
 
     private fun parseEquality(): Expr =
         parseLeftAssociativeBinary({ parseComparison() }, BANG_EQUAL, EQUAL_EQUAL)

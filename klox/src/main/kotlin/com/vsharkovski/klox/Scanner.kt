@@ -51,6 +51,8 @@ class Scanner(
             '-' -> addToken(MINUS)
             '+' -> addToken(PLUS)
             ';' -> addToken(SEMICOLON)
+            ':' -> addToken(COLON)
+            '?' -> addToken(QUESTION)
             '*' -> addToken(STAR)
             '!' -> addToken(if (advanceIfMatching('=')) BANG_EQUAL else BANG)
             '=' -> addToken(if (advanceIfMatching('=')) EQUAL_EQUAL else EQUAL)
@@ -64,7 +66,6 @@ class Scanner(
             } else {
                 addToken(SLASH)
             }
-            '?' -> addToken(if (advanceIfMatching(':')) QUESTION_COLON else QUESTION)
             ' ', '\r', '\t' -> Unit
             '\n' -> line++
             '"' -> scanString()

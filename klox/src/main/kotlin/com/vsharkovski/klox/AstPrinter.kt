@@ -13,13 +13,16 @@ class AstPrinter : Expr.Visitor<String> {
     override fun visitLiteralExpr(expr: Expr.Literal): String =
         if (expr.value == null) "nil" else expr.value.toString()
 
+    override fun visitTernaryExpr(expr: Expr.Ternary): String =
+        parenthesize("ternary", expr.left, expr.middle, expr.right)
+
     override fun visitUnaryExpr(expr: Expr.Unary): String =
         parenthesize(expr.operator.lexeme, expr.right)
 
-    private fun parenthesize(name: String, vararg exprs: Expr): String {
+    private fun parenthesize(name: String, vararg expressions: Expr): String {
         val builder = StringBuilder()
         builder.append("(").append(name)
-        for (expr in exprs) {
+        for (expr in expressions) {
             builder.append(" ")
             builder.append(expr.accept(this))
         }
