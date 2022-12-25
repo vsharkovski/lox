@@ -4,16 +4,16 @@ class AstPrinter : Expr.Visitor<String> {
     fun print(expr: Expr): String =
         expr.accept(this)
 
-    override fun visitBinaryExpr(expr: Binary): String =
+    override fun visitBinaryExpr(expr: Expr.Binary): String =
         parenthesize(expr.operator.lexeme, expr.left, expr.right)
 
-    override fun visitGroupingExpr(expr: Grouping): String =
+    override fun visitGroupingExpr(expr: Expr.Grouping): String =
         parenthesize("group", expr.expression)
 
-    override fun visitLiteralExpr(expr: Literal): String =
+    override fun visitLiteralExpr(expr: Expr.Literal): String =
         if (expr.value == null) "nil" else expr.value.toString()
 
-    override fun visitUnaryExpr(expr: Unary): String =
+    override fun visitUnaryExpr(expr: Expr.Unary): String =
         parenthesize(expr.operator.lexeme, expr.right)
 
     private fun parenthesize(name: String, vararg exprs: Expr): String {
