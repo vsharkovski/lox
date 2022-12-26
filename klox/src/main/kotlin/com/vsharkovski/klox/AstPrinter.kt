@@ -19,6 +19,9 @@ class AstPrinter : Expr.Visitor<String> {
     override fun visitUnaryExpr(expr: Expr.Unary): String =
         parenthesize(expr.operator.lexeme, expr.right)
 
+    override fun visitVariableExpr(expr: Expr.Variable): String =
+        parenthesize("var ${expr.name.lexeme}")
+
     private fun parenthesize(name: String, vararg expressions: Expr): String {
         val builder = StringBuilder()
         builder.append("(").append(name)

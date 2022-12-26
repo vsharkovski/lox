@@ -3,6 +3,8 @@ package com.vsharkovski.klox
 import com.vsharkovski.klox.TokenType.*
 
 class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
+    private val environment = Environment()
+
     fun interpret(statements: List<Stmt>) {
         try {
             for (statement in statements) {
@@ -28,6 +30,11 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         println(stringify(value))
     }
 
+    override fun visitVarStmt(stmt: Stmt.Var) {
+        val value = stmt.initializer?.let { evaluate(it) }
+        environment.define(stmt.name.lexeme, value)
+    }
+
     override fun visitLiteralExpr(expr: Expr.Literal): Any? =
         expr.value
 
@@ -46,6 +53,9 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
             else -> null
         }
     }
+
+    override fun visitVariableExpr(expr: Expr.Variable): Any? =
+        environment.get(expr.name)
 
     override fun visitBinaryExpr(expr: Expr.Binary): Any? {
         val left = evaluate(expr.left)

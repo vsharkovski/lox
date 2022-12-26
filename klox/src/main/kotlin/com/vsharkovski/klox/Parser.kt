@@ -4,7 +4,10 @@ import com.vsharkovski.klox.TokenType.*
 
 /*
 Expression grammar:
-    program        → statement* EOF ;
+    program        → declaration* EOF ;
+    declaration    → varDecl
+                   | statement ;
+    varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
     statement      → exprStmt
                    | printStmt ;
     exprStmt       → expression ";" ;
@@ -18,8 +21,10 @@ Expression grammar:
     factor         → unary ( ( "/" | "*" ) unary )* ;
     unary          → ( "!" | "-" ) unary
                    | primary ;
-    primary        → NUMBER | STRING | "true" | "false" | "nil"
-                   | "(" expression ")" ;
+    primary        → "true" | "false" | "nil"
+                   | NUMBER | STRING
+                   | "(" expression ")"
+                   | IDENTIFIER ;
  */
 
 class Parser(
@@ -32,10 +37,29 @@ class Parser(
     fun parse(): List<Stmt> {
         val statements = mutableListOf<Stmt>()
         while (!isAtEnd()) {
-            statements.add(parseStatement())
+            parseDeclaration()?.let { statements.add(it) }
         }
 
         return statements
+    }
+
+    private fun parseDeclaration(): Stmt? =
+        try {
+            if (advanceIfMatching(VAR))
+                parseVarDeclaration()
+            else
+                parseStatement()
+        } catch (error: ParseError) {
+            synchronize()
+            null
+        }
+
+    private fun parseVarDeclaration(): Stmt {
+        val name = consumeOrError(IDENTIFIER, "Expect variable name.")
+        val initializer = if (advanceIfMatching(EQUAL)) parseExpression() else null
+
+        consumeOrError(SEMICOLON, "Expect ';' after variable declaration.")
+        return Stmt.Var(name, initializer)
     }
 
     private fun parseStatement(): Stmt =
@@ -115,6 +139,8 @@ class Parser(
             val expr = parseExpression()
             consumeOrError(RIGHT_PAREN, "Expect ')' after expression.")
             Expr.Grouping(expr)
+        } else if (advanceIfMatching(IDENTIFIER)) {
+            Expr.Variable(previous())
         } else {
             throw error(peek(), "Expect expression.")
         }

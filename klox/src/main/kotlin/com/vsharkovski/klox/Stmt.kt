@@ -9,7 +9,7 @@ sealed interface Stmt {
 //        fun visitIfStmt(stmt: If): R
         fun visitPrintStmt(stmt: Print): R
 //        fun visitReturnStmt(stmt: Return): R
-//        fun visitVarStmt(stmt: Var): R
+        fun visitVarStmt(stmt: Var): R
 //        fun visitWhileStmt(stmt: While): R
     }
 
@@ -34,6 +34,14 @@ sealed interface Stmt {
     ) : Stmt {
         override fun <R> accept(visitor: Visitor<R>): R =
             visitor.visitPrintStmt(this)
+    }
+
+    data class Var(
+        val name: Token,
+        val initializer: Expr?
+    ) : Stmt {
+        override fun <R> accept(visitor: Visitor<R>): R =
+            visitor.visitVarStmt(this)
     }
 
 }

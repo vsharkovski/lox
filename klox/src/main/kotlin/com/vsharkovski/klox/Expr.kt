@@ -16,7 +16,7 @@ sealed interface Expr {
         fun visitTernaryExpr(expr: Ternary): R
 //        fun visitThisExpr(expr: This): R
         fun visitUnaryExpr(expr: Unary): R
-//        fun visitVariableExpr(expr: Variable): R
+        fun visitVariableExpr(expr: Variable): R
     }
 
     fun <R> accept(visitor: Visitor<R>): R
@@ -121,10 +121,10 @@ sealed interface Expr {
             visitor.visitUnaryExpr(this)
     }
 
-    //data class Variable(
-    //    val name: Token
-    //) : Expr {
-    //    override fun <R> accept(visitor: Visitor<R>): R =
-    //        visitor.visitVariableExpr(this)
-    //}
+    data class Variable(
+        val name: Token
+    ) : Expr {
+        override fun <R> accept(visitor: Visitor<R>): R =
+            visitor.visitVariableExpr(this)
+    }
 }
