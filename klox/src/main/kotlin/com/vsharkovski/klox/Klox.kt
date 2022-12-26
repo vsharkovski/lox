@@ -4,11 +4,14 @@ import java.io.File
 import kotlin.system.exitProcess
 
 object Klox {
-    private var hadError: Boolean = false
+    private val interpreter = Interpreter()
+    private var hadError = false
+    private var hadRuntimeError = false
 
     fun runFile(path: String) {
         runSource(File(path).readText())
         if (hadError) exitProcess(65)
+        if (hadRuntimeError) exitProcess(70)
     }
 
     fun runPrompt() {
@@ -29,7 +32,7 @@ object Klox {
         // Stop if there was a syntax error.
         if (hadError || expression == null) return
 
-        println(AstPrinter().print(expression))
+        interpreter.interpret(expression)
     }
 
     fun error(line: Int, message: String) {
@@ -42,6 +45,11 @@ object Klox {
         } else {
             report(token.line, " at '${token.lexeme}'", message)
         }
+    }
+
+    fun runtimeError(error: RuntimeError) {
+        System.err.println("${error.message}\n[line ${error.token.line}]")
+        hadRuntimeError = true
     }
 
     private fun report(line: Int, where: String, message: String) {
