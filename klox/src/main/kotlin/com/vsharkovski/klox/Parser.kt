@@ -2,6 +2,26 @@ package com.vsharkovski.klox
 
 import com.vsharkovski.klox.TokenType.*
 
+/*
+Expression grammar:
+    program        → statement* EOF ;
+    statement      → exprStmt
+                   | printStmt ;
+    exprStmt       → expression ";" ;
+    printStmt      → "print" expression ";" ;
+    expression     → block ;
+    block          → ternary ( "," ternary )* ;
+    ternary        → equality ( "?" equality ":" equality )* ;
+    equality       → comparison ( ( "!=" | "==" ) comparison )* ;
+    comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+    term           → factor ( ( "-" | "+" ) factor )* ;
+    factor         → unary ( ( "/" | "*" ) unary )* ;
+    unary          → ( "!" | "-" ) unary
+                   | primary ;
+    primary        → NUMBER | STRING | "true" | "false" | "nil"
+                   | "(" expression ")" ;
+ */
+
 class Parser(
     private val tokens: List<Token>
 ) {
@@ -9,28 +29,32 @@ class Parser(
 
     private var current: Int = 0
 
-    fun parse(): Expr? {
-        return try {
-            parseExpression()
-        } catch (error: ParseError) {
-            null
+    fun parse(): List<Stmt> {
+        val statements = mutableListOf<Stmt>()
+        while (!isAtEnd()) {
+            statements.add(parseStatement())
         }
+
+        return statements
     }
 
-    /*
-    Expression grammar:
-        expression     → block ;
-        block          → ternary ( "," ternary )* ;
-        ternary        → equality ( "?" equality ":" equality )* ;
-        equality       → comparison ( ( "!=" | "==" ) comparison )* ;
-        comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-        term           → factor ( ( "-" | "+" ) factor )* ;
-        factor         → unary ( ( "/" | "*" ) unary )* ;
-        unary          → ( "!" | "-" ) unary
-                       | primary ;
-        primary        → NUMBER | STRING | "true" | "false" | "nil"
-                       | "(" expression ")" ;
-     */
+    private fun parseStatement(): Stmt =
+        if (advanceIfMatching(PRINT))
+            parsePrintStatement()
+        else
+            parseExpressionStatement()
+
+    private fun parsePrintStatement(): Stmt {
+        val value = parseExpression()
+        consumeOrError(SEMICOLON, "Expect ';' after value.")
+        return Stmt.Print(value)
+    }
+
+    private fun parseExpressionStatement(): Stmt {
+        val expr = parseExpression()
+        consumeOrError(SEMICOLON, "Expect ';' after expression.")
+        return Stmt.Expression(expr)
+    }
 
     private fun parseExpression(): Expr =
         parseBlock()
