@@ -31,6 +31,12 @@ object Klox {
         val parser = Parser(tokens)
         val statements = parser.parse()
 
+        println("Tokens:")
+        tokens.forEach { println("  $it") }
+
+        println("Statements:")
+        statements.forEach { println("  $it") }
+
         // Stop if there was a syntax error.
         if (hadError) return
 

@@ -52,10 +52,12 @@ class Interpreter(
         println(stringify(value))
     }
 
-    override fun visitVarStmt(stmt: Stmt.Var) {
-        val value = stmt.initializer?.let { evaluate(it) }
-        environment.define(stmt.name.lexeme, value)
-    }
+    override fun visitVarStmt(stmt: Stmt.Var) =
+        if (stmt.isInitialized) {
+            environment.define(stmt.name.lexeme, stmt.initializer)
+        } else {
+            environment.define(stmt.name.lexeme)
+        }
 
     override fun visitAssignExpr(expr: Expr.Assign): Any? {
         val value = evaluate(expr.value)

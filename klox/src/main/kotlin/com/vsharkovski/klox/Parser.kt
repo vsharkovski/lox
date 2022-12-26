@@ -60,10 +60,15 @@ class Parser(
 
     private fun parseVarDeclaration(): Stmt {
         val name = consumeOrError(IDENTIFIER, "Expect variable name.")
-        val initializer = if (advanceIfMatching(EQUAL)) parseExpression() else null
+        val statement = if (advanceIfMatching(EQUAL)) {
+            val initializer = parseExpression()
+            Stmt.Var(name, initializer)
+        } else {
+            Stmt.Var(name)
+        }
 
         consumeOrError(SEMICOLON, "Expect ';' after variable declaration.")
-        return Stmt.Var(name, initializer)
+        return statement
     }
 
     private fun parseStatement(): Stmt =
