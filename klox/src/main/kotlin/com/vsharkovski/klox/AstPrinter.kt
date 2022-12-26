@@ -4,6 +4,9 @@ class AstPrinter : Expr.Visitor<String> {
     fun print(expr: Expr): String =
         expr.accept(this)
 
+    override fun visitAssignExpr(expr: Expr.Assign): String =
+        parenthesize("var ${expr.name.lexeme}", expr.value)
+
     override fun visitBinaryExpr(expr: Expr.Binary): String =
         parenthesize(expr.operator.lexeme, expr.left, expr.right)
 

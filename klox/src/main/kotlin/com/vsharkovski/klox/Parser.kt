@@ -12,7 +12,9 @@ Expression grammar:
                    | printStmt ;
     exprStmt       → expression ";" ;
     printStmt      → "print" expression ";" ;
-    expression     → block ;
+    expression     → assignment ;
+    assignment     → IDENTIFIER "=" assignment
+                   | block ;
     block          → ternary ( "," ternary )* ;
     ternary        → equality ( "?" equality ":" equality )* ;
     equality       → comparison ( ( "!=" | "==" ) comparison )* ;
@@ -81,7 +83,24 @@ class Parser(
     }
 
     private fun parseExpression(): Expr =
-        parseBlock()
+        parseAssignment()
+
+    private fun parseAssignment(): Expr {
+        val expr = parseBlock()
+
+        if (advanceIfMatching(EQUAL)) {
+            val token = previous()
+            val value = parseAssignment()
+
+            if (expr is Expr.Variable) {
+                return Expr.Assign(expr.name, value)
+            }
+
+            error(token, "Invalid assignment target.")
+        }
+
+        return expr
+    }
 
     private fun parseBlock(): Expr =
         parseLeftAssociativeBinary({ parseTernary() }, COMMA)
