@@ -39,6 +39,9 @@ class Interpreter : Expr.Visitor<Any?> {
         val right = evaluate(expr.right)
 
         return when (expr.operator.type) {
+            COMMA ->
+                // Block operator (e.g. "a, b") always discards left result and returns right.
+                right
             BANG_EQUAL ->
                 !isEqual(left, right)
             EQUAL_EQUAL ->
