@@ -103,6 +103,7 @@ class Interpreter : Expr.Visitor<Any?> {
         when (obj) {
             null -> false
             is Boolean -> obj
+            is Double -> !obj.equals(0.0)
             else -> true
         }
 
