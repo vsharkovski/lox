@@ -4,26 +4,28 @@ import java.io.File
 import kotlin.system.exitProcess
 
 object Klox {
-    private val interpreter = Interpreter()
     private var hadError = false
     private var hadRuntimeError = false
 
     fun runFile(path: String) {
-        runSource(File(path).readText())
+        val interpreter = Interpreter()
+        runSource(File(path).readText(), interpreter)
+
         if (hadError) exitProcess(65)
         if (hadRuntimeError) exitProcess(70)
     }
 
     fun runPrompt() {
+        val interpreter = Interpreter(true)
         while (true) {
             print("> ")
             val line = readlnOrNull() ?: break
-            runSource(line)
+            runSource(line, interpreter)
             hadError = false
         }
     }
 
-    private fun runSource(source: String) {
+    private fun runSource(source: String, interpreter: Interpreter) {
         val scanner = Scanner(source)
         val tokens = scanner.scanTokens()
         val parser = Parser(tokens)

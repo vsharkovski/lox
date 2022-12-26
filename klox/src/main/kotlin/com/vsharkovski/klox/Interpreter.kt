@@ -2,7 +2,9 @@ package com.vsharkovski.klox
 
 import com.vsharkovski.klox.TokenType.*
 
-class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
+class Interpreter(
+    private val printSingleExpressionStatements: Boolean = false
+) : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     private var environment = Environment()
 
     fun interpret(statements: List<Stmt>) {
@@ -39,7 +41,10 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     override fun visitExpressionStmt(stmt: Stmt.Expression) {
-        evaluate(stmt.expression)
+        val value = evaluate(stmt.expression)
+        if (printSingleExpressionStatements) {
+            println(stringify(value))
+        }
     }
 
     override fun visitPrintStmt(stmt: Stmt.Print) {
