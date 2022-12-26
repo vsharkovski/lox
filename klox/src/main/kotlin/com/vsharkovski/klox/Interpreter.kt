@@ -80,7 +80,10 @@ class Interpreter : Expr.Visitor<Any?> {
             }
             SLASH -> {
                 checkNumberOperands(expr.operator, left, right)
-                (left as Double) / (right as Double)
+                if ((right as Double).equals(0.0)) {
+                    throw RuntimeError(expr.operator, "Division by zero.")
+                }
+                (left as Double) / right
             }
             STAR -> {
                 checkNumberOperands(expr.operator, left, right)
