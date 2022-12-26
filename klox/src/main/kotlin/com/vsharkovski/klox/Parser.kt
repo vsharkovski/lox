@@ -80,26 +80,20 @@ class Parser(
             parsePrimary()
         }
 
-    private fun parsePrimary(): Expr {
-        val curr = advance()
-        return when (curr.type) {
-            FALSE ->
-                Expr.Literal(false)
-            TRUE ->
-                Expr.Literal(true)
-            NIL ->
-                Expr.Literal(null)
-            NUMBER, STRING ->
-                Expr.Literal(curr.literal)
-            LEFT_PAREN -> {
-                val expr = parseExpression()
-                consumeOrError(RIGHT_PAREN, "Expect ')' after expression.")
-                Expr.Grouping(expr)
-            }
-            else ->
-                throw error(curr, "Expect expression.")
+    private fun parsePrimary(): Expr =
+        if (advanceIfMatching(FALSE)) {
+            Expr.Literal(false)
+        } else if (advanceIfMatching(TRUE)) {
+            Expr.Literal(true)
+        } else if (advanceIfMatching(NUMBER, STRING)) {
+            Expr.Literal(previous().literal)
+        } else if (advanceIfMatching(LEFT_PAREN)) {
+            val expr = parseExpression()
+            consumeOrError(RIGHT_PAREN, "Expect ')' after expression.")
+            Expr.Grouping(expr)
+        } else {
+            throw error(peek(), "Expect expression.")
         }
-    }
 
     /**
      * Parse a left-associative binary expression group.
