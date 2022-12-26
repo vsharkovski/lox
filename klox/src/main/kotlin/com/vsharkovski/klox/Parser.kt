@@ -14,8 +14,8 @@ Expression grammar:
     printStmt      → "print" expression ";" ;
     expression     → assignment ;
     assignment     → IDENTIFIER "=" assignment
-                   | block ;
-    block          → ternary ( "," ternary )* ;
+                   | commaBlock ;
+    commaBlock     → ternary ( "," ternary )* ;
     ternary        → equality ( "?" equality ":" equality )* ;
     equality       → comparison ( ( "!=" | "==" ) comparison )* ;
     comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -86,7 +86,7 @@ class Parser(
         parseAssignment()
 
     private fun parseAssignment(): Expr {
-        val expr = parseBlock()
+        val expr = parseCommaBlock()
 
         if (advanceIfMatching(EQUAL)) {
             val token = previous()
@@ -102,7 +102,7 @@ class Parser(
         return expr
     }
 
-    private fun parseBlock(): Expr =
+    private fun parseCommaBlock(): Expr =
         parseLeftAssociativeBinary({ parseTernary() }, COMMA)
 
     private fun parseTernary(): Expr {
