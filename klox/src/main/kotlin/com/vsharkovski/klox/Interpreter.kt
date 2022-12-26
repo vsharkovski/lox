@@ -71,6 +71,10 @@ class Interpreter : Expr.Visitor<Any?> {
                     left + right
                 else if (left is String && right is String)
                     left + right
+                else if (left is String)
+                    left + stringify(right)
+                else if (right is String)
+                    stringify(left) + right
                 else
                     throw RuntimeError(expr.operator, "Operands must be two numbers or two strings.")
             }
