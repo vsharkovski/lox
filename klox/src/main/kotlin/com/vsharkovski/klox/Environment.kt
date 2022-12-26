@@ -1,18 +1,24 @@
 package com.vsharkovski.klox
 
-class Environment {
+class Environment(
+    private val enclosingEnvironment: Environment? = null
+) {
     private val values = mutableMapOf<String, Any?>()
 
     fun get(name: Token): Any? =
         if (values.containsKey(name.lexeme)) {
             values[name.lexeme]
+        } else if (enclosingEnvironment != null) {
+            enclosingEnvironment.get(name)
         } else {
             throw RuntimeError(name, "Undefined variable '${name.lexeme}'.")
         }
 
-    fun assign(name: Token, value: Any?) =
+    fun assign(name: Token, value: Any?): Unit =
         if (values.containsKey(name.lexeme)) {
             values[name.lexeme] = value
+        } else if (enclosingEnvironment != null) {
+            enclosingEnvironment.assign(name, value)
         } else {
             throw RuntimeError(name, "Undefined variable '${name.lexeme}'.")
         }

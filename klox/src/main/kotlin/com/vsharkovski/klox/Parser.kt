@@ -3,15 +3,17 @@ package com.vsharkovski.klox
 import com.vsharkovski.klox.TokenType.*
 
 /*
-Expression grammar:
+Complete grammar:
     program        → declaration* EOF ;
     declaration    → varDecl
                    | statement ;
     varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
     statement      → exprStmt
-                   | printStmt ;
+                   | printStmt
+                   | block ;
     exprStmt       → expression ";" ;
     printStmt      → "print" expression ";" ;
+    block          → "{" declaration "}" ;
     expression     → assignment ;
     assignment     → IDENTIFIER "=" assignment
                    | commaBlock ;
@@ -67,6 +69,8 @@ class Parser(
     private fun parseStatement(): Stmt =
         if (advanceIfMatching(PRINT))
             parsePrintStatement()
+        else if (advanceIfMatching(LEFT_BRACE))
+            parseBlock()
         else
             parseExpressionStatement()
 
@@ -80,6 +84,16 @@ class Parser(
         val expr = parseExpression()
         consumeOrError(SEMICOLON, "Expect ';' after expression.")
         return Stmt.Expression(expr)
+    }
+
+    private fun parseBlock(): Stmt {
+        val statements = mutableListOf<Stmt>()
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            parseDeclaration()?.let { statements.add(it) }
+        }
+
+        consumeOrError(RIGHT_BRACE, "Expect '}' after block.")
+        return Stmt.Block(statements)
     }
 
     private fun parseExpression(): Expr =
