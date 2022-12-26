@@ -53,10 +53,16 @@ class Interpreter(
     }
 
     override fun visitVarStmt(stmt: Stmt.Var) =
-        if (stmt.isInitialized) {
-            environment.define(stmt.name.lexeme, stmt.initializer)
-        } else {
-            environment.define(stmt.name.lexeme)
+        when (stmt) {
+            is Stmt.UninitializedVar -> {
+                environment.define(stmt.name.lexeme)
+            }
+            is Stmt.InitializedVar -> {
+                // Evaluate value if it is not nil.
+                val value = stmt.initializer?.let { evaluate(it) }
+
+                environment.define(stmt.name.lexeme, value)
+            }
         }
 
     override fun visitAssignExpr(expr: Expr.Assign): Any? {

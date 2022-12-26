@@ -62,9 +62,9 @@ class Parser(
         val name = consumeOrError(IDENTIFIER, "Expect variable name.")
         val statement = if (advanceIfMatching(EQUAL)) {
             val initializer = parseExpression()
-            Stmt.Var(name, initializer)
+            Stmt.InitializedVar(name, initializer)
         } else {
-            Stmt.Var(name)
+            Stmt.UninitializedVar(name)
         }
 
         consumeOrError(SEMICOLON, "Expect ';' after variable declaration.")

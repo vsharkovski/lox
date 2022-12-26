@@ -36,20 +36,14 @@ sealed interface Stmt {
             visitor.visitPrintStmt(this)
     }
 
-    data class Var(
-        val name: Token,
-    ) : Stmt {
-        var isInitialized: Boolean = false
-            private set
-        var initializer: Expr? = null
-            private set
-
-        constructor(name: Token, initializer: Expr?) : this(name) {
-            this.isInitialized = true
-            this.initializer = initializer
-        }
+    sealed interface Var : Stmt {
+        val name: Token
 
         override fun <R> accept(visitor: Visitor<R>): R =
             visitor.visitVarStmt(this)
     }
+
+    data class UninitializedVar(override val name: Token) : Var
+
+    data class InitializedVar(override val name: Token, val initializer: Expr?) : Var
 }
