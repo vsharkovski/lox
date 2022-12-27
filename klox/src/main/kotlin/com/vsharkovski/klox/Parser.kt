@@ -9,11 +9,15 @@ Complete grammar:
                    | statement ;
     varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
     statement      → exprStmt
+                   | forStmt
                    | ifStmt
                    | printStmt
                    | whileStmt
                    | block ;
     exprStmt       → expression ";" ;
+    forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
+                     expression? ";"
+                     expression? ")" statement ;
     ifStmt         → "if" "(" expression ")" statement
                    ( "else" statement )? ;
     printStmt      → "print" expression ";" ;
@@ -79,7 +83,9 @@ class Parser(
     }
 
     private fun parseStatement(): Stmt =
-        if (advanceIfMatching(IF))
+        if (advanceIfMatching(FOR))
+            parseForStatement()
+        else if (advanceIfMatching(IF))
             parseIfStatement()
         else if (advanceIfMatching(PRINT))
             parsePrintStatement()
@@ -89,6 +95,41 @@ class Parser(
             parseBlock()
         else
             parseExpressionStatement()
+
+    private fun parseForStatement(): Stmt {
+        consumeOrError(LEFT_PAREN, "Expect '(' after 'for'.")
+
+        val initializer = if (advanceIfMatching(SEMICOLON)) {
+            null
+        } else if (advanceIfMatching(VAR)) {
+            parseVarDeclaration()
+        } else {
+            parseExpressionStatement()
+        }
+
+        val condition = if (check(SEMICOLON)) null else parseExpression()
+        consumeOrError(SEMICOLON, "Expect ';' after loop condition.")
+
+        val increment = if (check(RIGHT_PAREN)) null else parseExpression()
+        consumeOrError(RIGHT_PAREN, "Expect ')' after for clause.")
+
+        val body = parseStatement()
+
+        return Stmt.Block(
+            listOfNotNull(
+                initializer,
+                Stmt.While(
+                    condition ?: Expr.Literal(true),
+                    Stmt.Block(
+                        listOfNotNull(
+                            body,
+                            increment?.let { Stmt.Expression(increment) }
+                        )
+                    )
+                )
+            )
+        )
+    }
 
     private fun parseIfStatement(): Stmt {
         consumeOrError(LEFT_PAREN, "Expect '(' after 'if'.")
