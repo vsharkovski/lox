@@ -196,6 +196,8 @@ class Parser(
             Expr.Literal(false)
         } else if (advanceIfMatching(TRUE)) {
             Expr.Literal(true)
+        } else if (advanceIfMatching(NIL)) {
+            Expr.Literal(null)
         } else if (advanceIfMatching(NUMBER, STRING)) {
             Expr.Literal(previous().literal)
         } else if (advanceIfMatching(LEFT_PAREN)) {
