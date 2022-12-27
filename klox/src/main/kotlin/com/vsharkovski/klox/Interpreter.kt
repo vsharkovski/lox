@@ -67,11 +67,16 @@ class Interpreter(
             }
             is Stmt.InitializedVar -> {
                 // Evaluate value if it is not nil.
-                val value = stmt.initializer?.let { evaluate(it) }
+                val value = evaluate(stmt.initializer)
 
                 environment.define(stmt.name.lexeme, value)
             }
         }
+
+    override fun visitWhileStmt(stmt: Stmt.While) {
+        while (isTruthy(evaluate(stmt.condition)))
+            execute(stmt.body)
+    }
 
     override fun visitAssignExpr(expr: Expr.Assign): Any? {
         val value = evaluate(expr.value)

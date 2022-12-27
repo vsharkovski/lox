@@ -11,11 +11,13 @@ Complete grammar:
     statement      → exprStmt
                    | ifStmt
                    | printStmt
+                   | whileStmt
                    | block ;
     exprStmt       → expression ";" ;
     ifStmt         → "if" "(" expression ")" statement
                    ( "else" statement )? ;
     printStmt      → "print" expression ";" ;
+    whileStmt      → "while" "(" expression ")" statement ;
     block          → "{" declaration "}" ;
     expression     → commaBlock ;
     commaBlock     → assignment ( "," assignment )* ;
@@ -81,6 +83,8 @@ class Parser(
             parseIfStatement()
         else if (advanceIfMatching(PRINT))
             parsePrintStatement()
+        else if (advanceIfMatching(WHILE))
+            parseWhileStatement()
         else if (advanceIfMatching(LEFT_BRACE))
             parseBlock()
         else
@@ -103,10 +107,13 @@ class Parser(
         return Stmt.Print(value)
     }
 
-    private fun parseExpressionStatement(): Stmt {
-        val expr = parseExpression()
-        consumeOrError(SEMICOLON, "Expect ';' after expression.")
-        return Stmt.Expression(expr)
+    private fun parseWhileStatement(): Stmt {
+        consumeOrError(LEFT_PAREN, "Expect '(' after 'while'.")
+        val condition = parseExpression()
+        consumeOrError(RIGHT_PAREN, "Expect ')' after condition.")
+        val body = parseStatement()
+
+        return Stmt.While(condition, body)
     }
 
     private fun parseBlock(): Stmt {
@@ -117,6 +124,12 @@ class Parser(
 
         consumeOrError(RIGHT_BRACE, "Expect '}' after block.")
         return Stmt.Block(statements)
+    }
+
+    private fun parseExpressionStatement(): Stmt {
+        val expr = parseExpression()
+        consumeOrError(SEMICOLON, "Expect ';' after expression.")
+        return Stmt.Expression(expr)
     }
 
     private fun parseExpression(): Expr =

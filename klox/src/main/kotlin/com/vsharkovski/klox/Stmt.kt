@@ -10,7 +10,7 @@ sealed interface Stmt {
         fun visitPrintStmt(stmt: Print): R
 //        fun visitReturnStmt(stmt: Return): R
         fun visitVarStmt(stmt: Var): R
-//        fun visitWhileStmt(stmt: While): R
+        fun visitWhileStmt(stmt: While): R
     }
 
     fun <R> accept(visitor: Visitor<R>): R
@@ -54,5 +54,13 @@ sealed interface Stmt {
 
     data class UninitializedVar(override val name: Token) : Var
 
-    data class InitializedVar(override val name: Token, val initializer: Expr?) : Var
+    data class InitializedVar(override val name: Token, val initializer: Expr) : Var
+
+    data class While(
+        val condition: Expr,
+        val body: Stmt
+    ) : Stmt {
+        override fun <R> accept(visitor: Visitor<R>): R =
+            visitor.visitWhileStmt(this)
+    }
 }
