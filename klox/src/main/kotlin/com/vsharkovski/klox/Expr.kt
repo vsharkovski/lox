@@ -2,15 +2,13 @@ package com.vsharkovski.klox
 
 sealed interface Expr {
     interface Visitor<R> {
-                fun visitAssignExpr(expr: Assign): R
+        fun visitAssignExpr(expr: Assign): R
         fun visitBinaryExpr(expr: Binary): R
-
-        //        fun visitCallExpr(expr: Call): R
+//        fun visitCallExpr(expr: Call): R
 //        fun visitGetExpr(expr: Get): R
         fun visitGroupingExpr(expr: Grouping): R
         fun visitLiteralExpr(expr: Literal): R
-
-        //        fun visitLogicalExpr(expr: Logical): R
+        fun visitLogicalExpr(expr: Logical): R
 //        fun visitSetExpr(expr: Set): R
 //        fun visitSuperExpr(expr: Super): R
         fun visitTernaryExpr(expr: Ternary): R
@@ -69,14 +67,14 @@ sealed interface Expr {
             visitor.visitLiteralExpr(this)
     }
 
-    //data class Logical(
-    //    val left: Expr,
-    //    val operator: Token,
-    //    val right: Expr
-    //) : Expr {
-    //    override fun <R> accept(visitor: Visitor<R>): R =
-    //        visitor.visitLogicalExpr(this)
-    //}
+    data class Logical(
+        val left: Expr,
+        val operator: Token,
+        val right: Expr
+    ) : Expr {
+        override fun <R> accept(visitor: Visitor<R>): R =
+            visitor.visitLogicalExpr(this)
+    }
 
     //data class Set(
     //    val obj: Expr,

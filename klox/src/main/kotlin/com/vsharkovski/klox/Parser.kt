@@ -9,16 +9,21 @@ Complete grammar:
                    | statement ;
     varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
     statement      → exprStmt
+                   | ifStmt
                    | printStmt
                    | block ;
     exprStmt       → expression ";" ;
+    ifStmt         → "if" "(" expression ")" statement
+                   ( "else" statement )? ;
     printStmt      → "print" expression ";" ;
     block          → "{" declaration "}" ;
-    expression     → assignment ;
+    expression     → commaBlock ;
+    commaBlock     → assignment ( "," assignment )* ;
     assignment     → IDENTIFIER "=" assignment
-                   | commaBlock ;
-    commaBlock     → ternary ( "," ternary )* ;
-    ternary        → equality ( "?" equality ":" equality )* ;
+                   | ternary ;
+    ternary        → logic_or ( "?" logic_or ":" logic_or )* ;
+    logic_or       → logic_and ( "or" logic_and )* ;
+    logic_and      → equality ( "and" equality )* ;
     equality       → comparison ( ( "!=" | "==" ) comparison )* ;
     comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
     term           → factor ( ( "-" | "+" ) factor )* ;
@@ -72,12 +77,25 @@ class Parser(
     }
 
     private fun parseStatement(): Stmt =
-        if (advanceIfMatching(PRINT))
+        if (advanceIfMatching(IF))
+            parseIfStatement()
+        else if (advanceIfMatching(PRINT))
             parsePrintStatement()
         else if (advanceIfMatching(LEFT_BRACE))
             parseBlock()
         else
             parseExpressionStatement()
+
+    private fun parseIfStatement(): Stmt {
+        consumeOrError(LEFT_PAREN, "Expect '(' after 'if'.")
+        val condition = parseExpression()
+        consumeOrError(RIGHT_PAREN, "Expect ')' after if condition.")
+
+        val thenBranch = parseStatement()
+        val elseBranch = if (advanceIfMatching(ELSE)) parseStatement() else null
+
+        return Stmt.If(condition, thenBranch, elseBranch)
+    }
 
     private fun parsePrintStatement(): Stmt {
         val value = parseExpression()
@@ -102,10 +120,13 @@ class Parser(
     }
 
     private fun parseExpression(): Expr =
-        parseAssignment()
+        parseCommaBlock()
+
+    private fun parseCommaBlock(): Expr =
+        parseLeftAssociativeBinary({ parseAssignment() }, COMMA)
 
     private fun parseAssignment(): Expr {
-        val expr = parseCommaBlock()
+        val expr = parseTernary()
 
         if (advanceIfMatching(EQUAL)) {
             val token = previous()
@@ -121,29 +142,33 @@ class Parser(
         return expr
     }
 
-    private fun parseCommaBlock(): Expr =
-        parseLeftAssociativeBinary({ parseTernary() }, COMMA)
-
     private fun parseTernary(): Expr {
-        var expr = parseEquality()
+        var expr = parseOr()
 
         while (advanceIfMatching(QUESTION)) {
             val firstOperator = previous()
-            val middleExpr = parseEquality()
+            val middleExpr = parseOr()
 
             if (advanceIfMatching(COLON)) {
                 val secondOperator = previous()
-                val rightExpr = parseEquality()
+                val rightExpr = parseOr()
                 expr = Expr.Ternary(expr, firstOperator, middleExpr, secondOperator, rightExpr)
             } else {
-                // Not a proper ternary operator, so interpret it as binary and stop looking.
-                expr = Expr.Binary(expr, firstOperator, middleExpr)
-                break
+                throw error(
+                    peek(),
+                    "Expect ':' after 'then' branch of ternary conditional operator '?:'."
+                )
             }
         }
 
         return expr
     }
+
+    private fun parseOr(): Expr =
+        parseLeftAssociativeBinary({ parseAnd() }, OR)
+
+    private fun parseAnd(): Expr =
+        parseLeftAssociativeBinary({ parseEquality() }, AND)
 
     private fun parseEquality(): Expr =
         parseLeftAssociativeBinary({ parseComparison() }, BANG_EQUAL, EQUAL_EQUAL)
