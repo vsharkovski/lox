@@ -7,9 +7,9 @@ object Klox {
     private var hadError = false
     private var hadRuntimeError = false
 
-    fun runFile(path: String) {
+    fun runFile(path: String, printDebug: Boolean = false) {
         val interpreter = Interpreter()
-        runSource(File(path).readText(), interpreter)
+        runSource(File(path).readText(), interpreter, printDebug)
 
         if (hadError) exitProcess(65)
         if (hadRuntimeError) exitProcess(70)
@@ -20,26 +20,29 @@ object Klox {
         while (true) {
             print("> ")
             val line = readlnOrNull() ?: break
-            runSource(line, interpreter)
+            runSource(line, interpreter, false)
             hadError = false
         }
     }
 
-    private fun runSource(source: String, interpreter: Interpreter) {
+    private fun runSource(source: String, interpreter: Interpreter, printDebug: Boolean) {
         val scanner = Scanner(source)
         val tokens = scanner.scanTokens()
         val parser = Parser(tokens)
         val statements = parser.parse()
 
-//        println("Tokens:")
-//        tokens.forEach { println("  $it") }
+        if (printDebug) {
+            println("############ DEBUG PRINT BEGIN")
 
-//        println("Statements:")
-//        statements.forEach { println("  $it") }
+            println("TOKENS:")
+            tokens.forEach { println("  $it") }
 
-//        println("SYNTAX TREE:")
-//        val astPrinter = AstPrinterMultiline()
-//        statements.forEach { println(astPrinter.print(it)) }
+            println("SYNTAX TREE:")
+            val astPrinter = AstPrinterMultiline()
+            statements.forEach { println(astPrinter.print(it)) }
+
+            println("############ DEBUG PRINT END")
+        }
 
         // Stop if there was a syntax error.
         if (hadError) return
