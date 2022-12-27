@@ -40,7 +40,7 @@ class AstPrinterMultiline : Stmt.Visitor<String>, Expr.Visitor<String> {
         }
 
     override fun visitWhileStmt(stmt: Stmt.While): String =
-        "While:\ncondition:\n${printIndented(stmt.condition)}"
+        "While:\n(condition)\n${printIndented(stmt.condition)}\n(body)\n${printIndented(stmt.body)}"
 
     override fun visitAssignExpr(expr: Expr.Assign): String =
         "Assign: ${expr.name.lexeme}, value:\n${printIndented(expr.value)}"
