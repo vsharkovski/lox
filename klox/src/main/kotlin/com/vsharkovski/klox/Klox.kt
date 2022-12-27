@@ -33,9 +33,13 @@ object Klox {
 
 //        println("Tokens:")
 //        tokens.forEach { println("  $it") }
-//
+
 //        println("Statements:")
 //        statements.forEach { println("  $it") }
+
+//        println("SYNTAX TREE:")
+//        val astPrinter = AstPrinterMultiline()
+//        statements.forEach { println(astPrinter.print(it)) }
 
         // Stop if there was a syntax error.
         if (hadError) return
