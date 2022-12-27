@@ -6,6 +6,7 @@ class Interpreter(
     private val printSingleExpressionStatements: Boolean = false
 ) : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     private var environment = Environment()
+    private var loopBroken = false
 
     fun interpret(statements: List<Stmt>) {
         try {
@@ -38,6 +39,10 @@ class Interpreter(
 
     override fun visitBlockStmt(stmt: Stmt.Block) {
         executeBlock(stmt.statements, Environment(this.environment))
+    }
+
+    override fun visitBreakStmt(stmt: Stmt.Break) {
+        loopBroken = true
     }
 
     override fun visitExpressionStmt(stmt: Stmt.Expression) {
@@ -74,8 +79,13 @@ class Interpreter(
         }
 
     override fun visitWhileStmt(stmt: Stmt.While) {
-        while (isTruthy(evaluate(stmt.condition)))
+        // While the condition is truthy and the loop has not been broken, execute the body.
+        while (isTruthy(evaluate(stmt.condition)) && !loopBroken)
             execute(stmt.body)
+
+        // If the loop was broken, reset this flag.
+        if (loopBroken)
+            loopBroken = false
     }
 
     override fun visitAssignExpr(expr: Expr.Assign): Any? {

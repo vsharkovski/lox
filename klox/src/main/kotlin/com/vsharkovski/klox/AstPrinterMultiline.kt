@@ -19,6 +19,9 @@ class AstPrinterMultiline : Stmt.Visitor<String>, Expr.Visitor<String> {
             "${result}\n${printIndented(curr)}"
         }
 
+    override fun visitBreakStmt(stmt: Stmt.Break): String =
+        "Break"
+
     override fun visitExpressionStmt(stmt: Stmt.Expression): String =
         "Expression:\n${printIndented(stmt.expression)}"
 

@@ -3,6 +3,7 @@ package com.vsharkovski.klox
 sealed interface Stmt {
     interface Visitor<R> {
         fun visitBlockStmt(stmt: Block): R
+        fun visitBreakStmt(stmt: Break): R
 //        fun visitClassStmt(stmt: Class): R
         fun visitExpressionStmt(stmt: Expression): R
 //        fun visitFunctionStmt(stmt: Function): R
@@ -20,6 +21,11 @@ sealed interface Stmt {
     ) : Stmt {
         override fun <R> accept(visitor: Visitor<R>): R =
             visitor.visitBlockStmt(this)
+    }
+
+    object Break : Stmt {
+        override fun <R> accept(visitor: Visitor<R>): R =
+            visitor.visitBreakStmt(this)
     }
 
     data class Expression(

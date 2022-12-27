@@ -8,12 +8,14 @@ Complete grammar:
     declaration    → varDecl
                    | statement ;
     varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
-    statement      → exprStmt
+    statement      → breakStmt
+                   | exprStmt
                    | forStmt
                    | ifStmt
                    | printStmt
                    | whileStmt
                    | block ;
+    breakStmt      → "break" ";" ;
     exprStmt       → expression ";" ;
     forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
                      expression? ";"
@@ -83,7 +85,9 @@ class Parser(
     }
 
     private fun parseStatement(): Stmt =
-        if (advanceIfMatching(FOR))
+        if (advanceIfMatching(BREAK))
+            parseBreakStatement()
+        else if (advanceIfMatching(FOR))
             parseForStatement()
         else if (advanceIfMatching(IF))
             parseIfStatement()
@@ -95,6 +99,11 @@ class Parser(
             parseBlock()
         else
             parseExpressionStatement()
+
+    private fun parseBreakStatement(): Stmt {
+        consumeOrError(SEMICOLON, "Expect ';' after break.")
+        return Stmt.Break
+    }
 
     private fun parseForStatement(): Stmt {
         consumeOrError(LEFT_PAREN, "Expect '(' after 'for'.")
