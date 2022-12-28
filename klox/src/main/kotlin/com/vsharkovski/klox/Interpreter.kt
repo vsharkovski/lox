@@ -81,6 +81,9 @@ class Interpreter(
             execute(stmt.elseBranch)
     }
 
+    override fun visitReturnStmt(stmt: Stmt.Return): Nothing =
+        throw Return(stmt.value?.let { evaluate(it) })
+
     override fun visitVarStmt(stmt: Stmt.Var) =
         when (stmt) {
             is Stmt.UninitializedVar -> {

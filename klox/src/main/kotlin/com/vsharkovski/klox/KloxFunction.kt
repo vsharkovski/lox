@@ -10,7 +10,12 @@ class KloxFunction(
         for (i in 0 until declaration.params.size)
             environment.define(declaration.params[i].lexeme, arguments[i])
 
-        interpreter.executeBlock(declaration.body, environment)
+        try {
+            interpreter.executeBlock(declaration.body, environment)
+        } catch (returnValue: Return) {
+            return returnValue.value
+        }
+
         return null
     }
 

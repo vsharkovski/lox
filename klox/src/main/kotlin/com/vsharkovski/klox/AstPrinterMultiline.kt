@@ -40,6 +40,9 @@ class AstPrinterMultiline : Stmt.Visitor<String>, Expr.Visitor<String> {
             append("\n(else)\n${printIndented(stmt.elseBranch)}")
     }
 
+    override fun visitReturnStmt(stmt: Stmt.Return): String =
+        "Return: \n${stmt.value?.let { printIndented(it) } ?: "nil"}"
+
     override fun visitVarStmt(stmt: Stmt.Var): String =
         when (stmt) {
             is Stmt.UninitializedVar ->

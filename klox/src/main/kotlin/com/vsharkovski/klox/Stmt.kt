@@ -4,11 +4,12 @@ sealed interface Stmt {
     interface Visitor<R> {
         fun visitBlockStmt(stmt: Block): R
         fun visitBreakStmt(stmt: Break): R
-//        fun visitClassStmt(stmt: Class): R
+
+        //        fun visitClassStmt(stmt: Class): R
         fun visitExpressionStmt(stmt: Expression): R
         fun visitFunctionStmt(stmt: Function): R
         fun visitIfStmt(stmt: If): R
-//        fun visitReturnStmt(stmt: Return): R
+        fun visitReturnStmt(stmt: Return): R
         fun visitVarStmt(stmt: Var): R
         fun visitWhileStmt(stmt: While): R
     }
@@ -50,6 +51,14 @@ sealed interface Stmt {
     ) : Stmt {
         override fun <R> accept(visitor: Visitor<R>): R =
             visitor.visitIfStmt(this)
+    }
+
+    data class Return(
+        val keyword: Token,
+        val value: Expr?
+    ) : Stmt {
+        override fun <R> accept(visitor: Visitor<R>): R =
+            visitor.visitReturnStmt(this)
     }
 
     sealed interface Var : Stmt {

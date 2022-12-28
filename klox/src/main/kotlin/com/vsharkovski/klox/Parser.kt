@@ -16,6 +16,7 @@ Complete grammar:
                    | exprStmt
                    | forStmt
                    | ifStmt
+                   | returnStmt
                    | whileStmt
                    | block ;
     breakStmt      → "break" ";" ;
@@ -25,6 +26,7 @@ Complete grammar:
                      expression? ")" statement ;
     ifStmt         → "if" "(" expression ")" statement
                    ( "else" statement )? ;
+    returnStmt     → "return" expression? ";" ;
     whileStmt      → "while" "(" expression ")" statement ;
     block          → "{" declaration "}" ;
     expression     → commaBlock ;
@@ -97,6 +99,8 @@ class Parser(
             parseForStatement()
         else if (advanceIfMatching(IF))
             parseIfStatement()
+        else if (advanceIfMatching(RETURN))
+            parseReturnStatement()
         else if (advanceIfMatching(WHILE))
             parseWhileStatement()
         else if (advanceIfMatching(LEFT_BRACE))
@@ -179,6 +183,13 @@ class Parser(
         val elseBranch = if (advanceIfMatching(ELSE)) parseStatement() else null
 
         return Stmt.If(condition, thenBranch, elseBranch)
+    }
+
+    private fun parseReturnStatement(): Stmt {
+        val keyword = previous()
+        val value = if (check(SEMICOLON)) null else parseExpression()
+        consumeOrError(SEMICOLON, "Expect ';' after return value.")
+        return Stmt.Return(keyword, value)
     }
 
     private fun parseWhileStatement(): Stmt {
