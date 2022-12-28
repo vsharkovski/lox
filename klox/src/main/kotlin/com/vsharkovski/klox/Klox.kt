@@ -32,16 +32,10 @@ object Klox {
         val statements = parser.parse()
 
         if (printDebug) {
-            println("############ DEBUG PRINT BEGIN")
-
-            println("TOKENS:")
-            tokens.forEach { println("  $it") }
-
-            println("SYNTAX TREE:")
+            println("############ SYNTAX TREE BEGIN")
             val astPrinter = AstPrinterMultiline()
             statements.forEach { println(astPrinter.print(it)) }
-
-            println("############ DEBUG PRINT END")
+            println("############ SYNTAX TREE END")
         }
 
         // Stop if there was a syntax error.
