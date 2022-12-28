@@ -10,14 +10,21 @@ class Interpreter(
     private var loopBroken = false
 
     init {
+        globals.define("print", object : KloxCallable {
+            override val arity = 1
+            override fun toString(): String = "<native fn>"
+
+            override fun call(interpreter: Interpreter, arguments: List<Any?>) {
+                println(stringify(arguments[0]))
+            }
+        })
         globals.define("clock", object : KloxCallable {
             override val arity = 0
+            override fun toString(): String = "<native fn>"
 
             override fun call(interpreter: Interpreter, arguments: List<Any?>): Double {
                 return System.currentTimeMillis().toDouble() / 1000.0
             }
-
-            override fun toString(): String = "<native fn>"
         })
     }
 
@@ -72,11 +79,6 @@ class Interpreter(
             execute(stmt.thenBranch)
         else if (stmt.elseBranch != null)
             execute(stmt.elseBranch)
-    }
-
-    override fun visitPrintStmt(stmt: Stmt.Print) {
-        val value = evaluate(stmt.expression)
-        println(stringify(value))
     }
 
     override fun visitVarStmt(stmt: Stmt.Var) =
