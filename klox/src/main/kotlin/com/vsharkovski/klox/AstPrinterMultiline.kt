@@ -44,12 +44,7 @@ class AstPrinterMultiline : Stmt.Visitor<String>, Expr.Visitor<String> {
         "Return: \n${stmt.value?.let { printIndented(it) } ?: "nil"}"
 
     override fun visitVarStmt(stmt: Stmt.Var): String =
-        when (stmt) {
-            is Stmt.UninitializedVar ->
-                "UninitializedVar: ${stmt.name.lexeme}"
-            is Stmt.InitializedVar ->
-                "InitializedVar: ${stmt.name.lexeme}, value:\n${printIndented(stmt.initializer)}"
-        }
+        "Var: ${stmt.name.lexeme}, value:\n${stmt.initializer?.let { printIndented(it) } ?: "nil"}"
 
     override fun visitWhileStmt(stmt: Stmt.While): String =
         "While:\n(condition)\n${printIndented(stmt.condition)}\n(body)\n${printIndented(stmt.body)}"

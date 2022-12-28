@@ -23,7 +23,9 @@ sealed interface Stmt {
             visitor.visitBlockStmt(this)
     }
 
-    object Break : Stmt {
+    data class Break(
+        val keyword: Token
+    ) : Stmt {
         override fun <R> accept(visitor: Visitor<R>): R =
             visitor.visitBreakStmt(this)
     }
@@ -61,16 +63,13 @@ sealed interface Stmt {
             visitor.visitReturnStmt(this)
     }
 
-    sealed interface Var : Stmt {
-        val name: Token
-
+    data class Var(
+        val name: Token,
+        val initializer: Expr?
+    ) : Stmt {
         override fun <R> accept(visitor: Visitor<R>): R =
             visitor.visitVarStmt(this)
     }
-
-    data class UninitializedVar(override val name: Token) : Var
-
-    data class InitializedVar(override val name: Token, val initializer: Expr) : Var
 
     data class While(
         val condition: Expr,

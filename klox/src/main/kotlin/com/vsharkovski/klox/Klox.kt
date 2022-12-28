@@ -41,6 +41,12 @@ object Klox {
         // Stop if there was a syntax error.
         if (hadError) return
 
+        val resolver = Resolver(interpreter)
+        resolver.resolve(statements)
+
+        // Stop if there was a resolution error.
+        if (hadError) return
+
         interpreter.interpret(statements)
     }
 

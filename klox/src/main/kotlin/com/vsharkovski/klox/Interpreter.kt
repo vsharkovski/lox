@@ -5,7 +5,8 @@ import com.vsharkovski.klox.TokenType.*
 class Interpreter(
     private val printSingleExpressionStatements: Boolean = false
 ) : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
-    val globals = Environment()
+    private val globals = Environment()
+    private val locals = mutableMapOf<Expr, Int>()
     private var environment = globals
     private var loopBroken = false
 
@@ -42,6 +43,10 @@ class Interpreter(
 
     private fun execute(stmt: Stmt) =
         stmt.accept(this)
+
+    fun resolve(expr: Expr, depth: Int) {
+        locals[expr] = depth
+    }
 
     fun executeBlock(statements: List<Stmt>, environment: Environment) {
         val previousEnvironment = this.environment
@@ -84,18 +89,10 @@ class Interpreter(
     override fun visitReturnStmt(stmt: Stmt.Return): Nothing =
         throw Return(stmt.value?.let { evaluate(it) })
 
-    override fun visitVarStmt(stmt: Stmt.Var) =
-        when (stmt) {
-            is Stmt.UninitializedVar -> {
-                environment.define(stmt.name.lexeme)
-            }
-            is Stmt.InitializedVar -> {
-                // Evaluate value if it is not nil.
-                val value = evaluate(stmt.initializer)
-
-                environment.define(stmt.name.lexeme, value)
-            }
-        }
+    override fun visitVarStmt(stmt: Stmt.Var) {
+        val value = stmt.initializer?.let { evaluate(it) }
+        environment.define(stmt.name.lexeme, value)
+    }
 
     override fun visitWhileStmt(stmt: Stmt.While) {
         // While the condition is truthy and the loop has not been broken, execute the body.
@@ -109,7 +106,13 @@ class Interpreter(
 
     override fun visitAssignExpr(expr: Expr.Assign): Any? {
         val value = evaluate(expr.value)
-        environment.assign(expr.name, value)
+
+        val distance = locals[expr]
+        if (distance == null)
+            globals.assign(expr.name, value)
+        else
+            environment.assignAt(distance, expr.name, value)
+
         return value
     }
 
@@ -144,7 +147,15 @@ class Interpreter(
     }
 
     override fun visitVariableExpr(expr: Expr.Variable): Any? =
-        environment.get(expr.name)
+        lookUpVariable(expr.name, expr)
+
+    private fun lookUpVariable(name: Token, expr: Expr): Any? {
+        val distance = locals[expr]
+        return if (distance == null)
+            globals.get(name)
+        else
+            environment.getAt(distance, name.lexeme)
+    }
 
     override fun visitBinaryExpr(expr: Expr.Binary): Any? {
         val left = evaluate(expr.left)
