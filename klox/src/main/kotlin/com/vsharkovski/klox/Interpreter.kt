@@ -70,7 +70,7 @@ class Interpreter(
     }
 
     override fun visitFunctionStmt(stmt: Stmt.Function) {
-        val function = KloxFunction(stmt)
+        val function = KloxFunction(stmt, environment)
         environment.define(stmt.name.lexeme, function)
     }
 
