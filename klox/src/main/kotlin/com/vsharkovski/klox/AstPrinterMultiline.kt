@@ -6,7 +6,7 @@ private const val INDENTATION = "  "
 class AstPrinterMultiline : Stmt.Visitor<String>, Expr.Visitor<String> {
     fun print(stmt: Stmt): String = stmt.accept(this)
 
-    fun print(expr: Expr): String = expr.accept(this)
+    private fun print(expr: Expr): String = expr.accept(this)
 
     private fun printIndented(stmt: Stmt): String =
         print(stmt).prependIndent(INDENTATION)
@@ -15,15 +15,24 @@ class AstPrinterMultiline : Stmt.Visitor<String>, Expr.Visitor<String> {
         print(expr).prependIndent(INDENTATION)
 
     override fun visitBlockStmt(stmt: Stmt.Block): String =
-        stmt.statements.fold("Block:") { result, curr ->
-            "${result}\n${printIndented(curr)}"
-        }
+        "Block${
+            stmt.statements.fold(":") { result, curr ->
+                "$result\n${printIndented(curr)}"
+            }
+        }"
 
     override fun visitBreakStmt(stmt: Stmt.Break): String =
         "Break"
 
     override fun visitExpressionStmt(stmt: Stmt.Expression): String =
         "Expression:\n${printIndented(stmt.expression)}"
+
+    override fun visitFunctionStmt(stmt: Stmt.Function): String =
+        "Function: ${stmt.name.lexeme}, ${stmt.params.map { it.lexeme }}${
+            stmt.body.fold("\n(body)") { result, curr ->
+                "$result\n${printIndented(curr)}"
+            }
+        }"
 
     override fun visitIfStmt(stmt: Stmt.If): String = buildString {
         append("If:\n(condition)\n${printIndented(stmt.condition)}\n(then)\n${printIndented(stmt.thenBranch)}")
@@ -50,6 +59,13 @@ class AstPrinterMultiline : Stmt.Visitor<String>, Expr.Visitor<String> {
 
     override fun visitBinaryExpr(expr: Expr.Binary): String =
         "Binary: ${expr.operator.lexeme}\n(left)\n${printIndented(expr.left)}\n(right)\n${printIndented(expr.right)}"
+
+    override fun visitCallExpr(expr: Expr.Call): String =
+        "Call:\n(callee)\n${printIndented(expr.callee)}${
+            expr.arguments.fold("\n(arguments)") { result, curr ->
+                "$result\n${printIndented(curr)}"
+            }
+        }"
 
     override fun visitGroupingExpr(expr: Expr.Grouping): String =
         "Group:\n${printIndented(expr.expression)}"

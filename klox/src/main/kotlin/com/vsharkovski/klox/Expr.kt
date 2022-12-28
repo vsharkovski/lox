@@ -4,7 +4,7 @@ sealed interface Expr {
     interface Visitor<R> {
         fun visitAssignExpr(expr: Assign): R
         fun visitBinaryExpr(expr: Binary): R
-//        fun visitCallExpr(expr: Call): R
+        fun visitCallExpr(expr: Call): R
 //        fun visitGetExpr(expr: Get): R
         fun visitGroupingExpr(expr: Grouping): R
         fun visitLiteralExpr(expr: Literal): R
@@ -36,14 +36,14 @@ sealed interface Expr {
             visitor.visitBinaryExpr(this)
     }
 
-    //data class Call(
-    //    val callee: Expr,
-    //    val paren: Token,
-    //    val arguments: List<Expr>
-    //) : Expr {
-    //    override fun <R> accept(visitor: Visitor<R>): R =
-    //        visitor.visitCallExpr(this)
-    //}
+    data class Call(
+        val callee: Expr,
+        val paren: Token,
+        val arguments: List<Expr>
+    ) : Expr {
+        override fun <R> accept(visitor: Visitor<R>): R =
+            visitor.visitCallExpr(this)
+    }
 
     //data class Get(
     //    val obj: Expr,

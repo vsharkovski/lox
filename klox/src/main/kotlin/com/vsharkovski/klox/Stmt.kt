@@ -6,7 +6,7 @@ sealed interface Stmt {
         fun visitBreakStmt(stmt: Break): R
 //        fun visitClassStmt(stmt: Class): R
         fun visitExpressionStmt(stmt: Expression): R
-//        fun visitFunctionStmt(stmt: Function): R
+        fun visitFunctionStmt(stmt: Function): R
         fun visitIfStmt(stmt: If): R
         fun visitPrintStmt(stmt: Print): R
 //        fun visitReturnStmt(stmt: Return): R
@@ -33,6 +33,15 @@ sealed interface Stmt {
     ) : Stmt {
         override fun <R> accept(visitor: Visitor<R>): R =
             visitor.visitExpressionStmt(this)
+    }
+
+    data class Function(
+        val name: Token,
+        val params: List<Token>,
+        val body: List<Stmt>
+    ) : Stmt {
+        override fun <R> accept(visitor: Visitor<R>): R =
+            visitor.visitFunctionStmt(this)
     }
 
     data class If(

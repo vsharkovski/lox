@@ -5,8 +5,12 @@ import com.vsharkovski.klox.TokenType.*
 /*
 Complete grammar:
     program        → declaration* EOF ;
-    declaration    → varDecl
+    declaration    → funDecl
+                   | varDecl
                    | statement ;
+    funDecl        → "fun" function ;
+    function       → IDENTIFIER "(" parameters? ")" block ;
+    parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
     varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
     statement      → breakStmt
                    | exprStmt
@@ -37,7 +41,9 @@ Complete grammar:
     term           → factor ( ( "-" | "+" ) factor )* ;
     factor         → unary ( ( "/" | "*" ) unary )* ;
     unary          → ( "!" | "-" ) unary
-                   | primary ;
+                   | call ;
+    call           → primary ( "(" arguments? ")" )* ;
+    arguments      → assignment ( "," assignment )* ;
     primary        → "true" | "false" | "nil"
                    | NUMBER | STRING
                    | "(" expression ")"
@@ -62,7 +68,9 @@ class Parser(
 
     private fun parseDeclaration(): Stmt? =
         try {
-            if (advanceIfMatching(VAR))
+            if (advanceIfMatching(FUN))
+                parseFunction("function")
+            else if (advanceIfMatching(VAR))
                 parseVarDeclaration()
             else
                 parseStatement()
@@ -71,7 +79,7 @@ class Parser(
             null
         }
 
-    private fun parseVarDeclaration(): Stmt {
+    private fun parseVarDeclaration(): Stmt.Var {
         val name = consumeOrError(IDENTIFIER, "Expect variable name.")
         val statement = if (advanceIfMatching(EQUAL)) {
             val initializer = parseExpression()
@@ -96,13 +104,19 @@ class Parser(
         else if (advanceIfMatching(WHILE))
             parseWhileStatement()
         else if (advanceIfMatching(LEFT_BRACE))
-            parseBlock()
+            Stmt.Block(parseBlock())
         else
             parseExpressionStatement()
 
     private fun parseBreakStatement(): Stmt {
         consumeOrError(SEMICOLON, "Expect ';' after break.")
         return Stmt.Break
+    }
+
+    private fun parseExpressionStatement(): Stmt {
+        val expr = parseExpression()
+        consumeOrError(SEMICOLON, "Expect ';' after expression.")
+        return Stmt.Expression(expr)
     }
 
     private fun parseForStatement(): Stmt {
@@ -140,6 +154,26 @@ class Parser(
         )
     }
 
+    private fun parseFunction(kind: String): Stmt.Function {
+        val name = consumeOrError(IDENTIFIER, "Expect $kind name.")
+        consumeOrError(LEFT_PAREN, "Expect '(' after $kind name.")
+
+        val parameters = mutableListOf<Token>()
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (parameters.size >= 255)
+                    error(peek(), "Can't have more than 255 parameters.")
+
+                parameters.add(consumeOrError(IDENTIFIER, "Expect parameter name."))
+            } while (advanceIfMatching(COMMA))
+        }
+        consumeOrError(RIGHT_PAREN, "Expect ')' after parameters.")
+
+        consumeOrError(LEFT_BRACE, "Expect '{' before $kind body.")
+        val body = parseBlock()
+        return Stmt.Function(name, parameters, body)
+    }
+
     private fun parseIfStatement(): Stmt {
         consumeOrError(LEFT_PAREN, "Expect '(' after 'if'.")
         val condition = parseExpression()
@@ -166,20 +200,14 @@ class Parser(
         return Stmt.While(condition, body)
     }
 
-    private fun parseBlock(): Stmt {
+    private fun parseBlock(): List<Stmt> {
         val statements = mutableListOf<Stmt>()
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
             parseDeclaration()?.let { statements.add(it) }
         }
 
         consumeOrError(RIGHT_BRACE, "Expect '}' after block.")
-        return Stmt.Block(statements)
-    }
-
-    private fun parseExpressionStatement(): Stmt {
-        val expr = parseExpression()
-        consumeOrError(SEMICOLON, "Expect ';' after expression.")
-        return Stmt.Expression(expr)
+        return statements
     }
 
     private fun parseExpression(): Expr =
@@ -251,8 +279,41 @@ class Parser(
             val right = parseUnary()
             Expr.Unary(operator, right)
         } else {
-            parsePrimary()
+            parseCall()
         }
+
+    private fun parseCall(): Expr {
+        var expr = parsePrimary()
+
+        while (true) {
+            if (advanceIfMatching(LEFT_PAREN)) {
+                expr = finishParseCall(expr)
+            } else {
+                break
+            }
+        }
+
+        return expr
+    }
+
+    private fun finishParseCall(callee: Expr): Expr {
+        val arguments = mutableListOf<Expr>()
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (arguments.size >= 255)
+                    error(peek(), "Can't have more than 255 arguments.")
+
+                // We parse on the level of 'assignment' instead of 'expression'
+                // because otherwise our commaBlock expression would consume all arguments
+                // into one expression
+                arguments.add(parseAssignment())
+            } while (advanceIfMatching(COMMA))
+        }
+
+        val paren = consumeOrError(RIGHT_PAREN, "Expect ')' after arguments.")
+
+        return Expr.Call(callee, paren, arguments)
+    }
 
     private fun parsePrimary(): Expr =
         if (advanceIfMatching(FALSE)) {

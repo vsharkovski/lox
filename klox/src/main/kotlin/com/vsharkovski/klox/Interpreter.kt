@@ -5,14 +5,26 @@ import com.vsharkovski.klox.TokenType.*
 class Interpreter(
     private val printSingleExpressionStatements: Boolean = false
 ) : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
-    private var environment = Environment()
+    val globals = Environment()
+    private var environment = globals
     private var loopBroken = false
+
+    init {
+        globals.define("clock", object : KloxCallable {
+            override val arity = 0
+
+            override fun call(interpreter: Interpreter, arguments: List<Any?>): Double {
+                return System.currentTimeMillis().toDouble() / 1000.0
+            }
+
+            override fun toString(): String = "<native fn>"
+        })
+    }
 
     fun interpret(statements: List<Stmt>) {
         try {
-            for (statement in statements) {
+            for (statement in statements)
                 execute(statement)
-            }
         } catch (error: RuntimeError) {
             Klox.runtimeError(error)
         }
@@ -24,14 +36,13 @@ class Interpreter(
     private fun execute(stmt: Stmt) =
         stmt.accept(this)
 
-    private fun executeBlock(statements: List<Stmt>, environment: Environment) {
+    fun executeBlock(statements: List<Stmt>, environment: Environment) {
         val previousEnvironment = this.environment
         try {
             this.environment = environment
 
-            for (statement in statements) {
+            for (statement in statements)
                 execute(statement)
-            }
         } finally {
             this.environment = previousEnvironment
         }
@@ -47,17 +58,20 @@ class Interpreter(
 
     override fun visitExpressionStmt(stmt: Stmt.Expression) {
         val value = evaluate(stmt.expression)
-        if (printSingleExpressionStatements) {
+        if (printSingleExpressionStatements)
             println(stringify(value))
-        }
+    }
+
+    override fun visitFunctionStmt(stmt: Stmt.Function) {
+        val function = KloxFunction(stmt)
+        environment.define(stmt.name.lexeme, function)
     }
 
     override fun visitIfStmt(stmt: Stmt.If) {
-        if (isTruthy(evaluate(stmt.condition))) {
+        if (isTruthy(evaluate(stmt.condition)))
             execute(stmt.thenBranch)
-        } else if (stmt.elseBranch != null) {
+        else if (stmt.elseBranch != null)
             execute(stmt.elseBranch)
-        }
     }
 
     override fun visitPrintStmt(stmt: Stmt.Print) {
@@ -100,13 +114,12 @@ class Interpreter(
     override fun visitLogicalExpr(expr: Expr.Logical): Any? {
         val left = evaluate(expr.left)
 
-        return if (expr.operator.type == OR && isTruthy(left)) {
+        return if (expr.operator.type == OR && isTruthy(left))
             left
-        } else if (expr.operator.type == AND && !isTruthy(left)) {
+        else if (expr.operator.type == AND && !isTruthy(left))
             left
-        } else {
+        else
             evaluate(expr.right)
-        }
     }
 
     override fun visitGroupingExpr(expr: Expr.Grouping): Any? =
@@ -185,6 +198,21 @@ class Interpreter(
             }
             else -> null
         }
+    }
+
+    override fun visitCallExpr(expr: Expr.Call): Any? {
+        val callee = evaluate(expr.callee)
+        val arguments = expr.arguments.map { evaluate(it) }
+
+        // Ensure the callee is a function.
+        if (callee !is KloxCallable)
+            throw RuntimeError(expr.paren, "Can only call functions and classes.")
+
+        // Ensure the number of passed arguments is correct.
+        if (arguments.size != callee.arity)
+            throw RuntimeError(expr.paren, "Expected ${callee.arity} arguments but got ${arguments.size}.")
+
+        return callee.call(this, arguments)
     }
 
     override fun visitTernaryExpr(expr: Expr.Ternary): Any? {
