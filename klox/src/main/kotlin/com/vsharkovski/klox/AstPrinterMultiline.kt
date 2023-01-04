@@ -15,14 +15,21 @@ class AstPrinterMultiline : Stmt.Visitor<String>, Expr.Visitor<String> {
         print(expr).prependIndent(INDENTATION)
 
     override fun visitBlockStmt(stmt: Stmt.Block): String =
-        "Block${
-            stmt.statements.fold(":") { result, curr ->
+        "Block:${
+            stmt.statements.fold("") { result, curr ->
                 "$result\n${printIndented(curr)}"
             }
         }"
 
     override fun visitBreakStmt(stmt: Stmt.Break): String =
         "Break"
+
+    override fun visitClassStmt(stmt: Stmt.Class): String =
+        "Class: ${stmt.name.lexeme}, methods:${
+            stmt.methods.fold("") { result, curr ->
+                "$result\n${printIndented(curr)}"
+            }
+        }"
 
     override fun visitExpressionStmt(stmt: Stmt.Expression): String =
         "Expression:\n${printIndented(stmt.expression)}"

@@ -6,8 +6,8 @@ class Interpreter(
     private val printSingleExpressionStatements: Boolean = false
 ) : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     private val globals = Environment()
-    private val locals = mutableMapOf<Expr, Int>()
     private var environment = globals
+    private val locals = mutableMapOf<Expr, Int>()
     private var loopBroken = false
 
     init {
@@ -68,6 +68,12 @@ class Interpreter(
         loopBroken = true
     }
 
+    override fun visitClassStmt(stmt: Stmt.Class) {
+        environment.define(stmt.name.lexeme, null)
+        val klass = KloxClass(stmt.name.lexeme)
+        environment.assign(stmt.name, klass)
+    }
+
     override fun visitExpressionStmt(stmt: Stmt.Expression) {
         val value = evaluate(stmt.expression)
         if (printSingleExpressionStatements)
@@ -107,11 +113,9 @@ class Interpreter(
     override fun visitAssignExpr(expr: Expr.Assign): Any? {
         val value = evaluate(expr.value)
 
-        val distance = locals[expr]
-        if (distance == null)
-            globals.assign(expr.name, value)
-        else
+        locals[expr]?.let { distance ->
             environment.assignAt(distance, expr.name, value)
+        } ?: globals.assign(expr.name, value)
 
         return value
     }
@@ -149,13 +153,10 @@ class Interpreter(
     override fun visitVariableExpr(expr: Expr.Variable): Any? =
         lookUpVariable(expr.name, expr)
 
-    private fun lookUpVariable(name: Token, expr: Expr): Any? {
-        val distance = locals[expr]
-        return if (distance == null)
-            globals.get(name)
-        else
+    private fun lookUpVariable(name: Token, expr: Expr): Any? =
+        locals[expr]?.let { distance ->
             environment.getAt(distance, name.lexeme)
-    }
+        } ?: globals.get(name)
 
     override fun visitBinaryExpr(expr: Expr.Binary): Any? {
         val left = evaluate(expr.left)

@@ -5,9 +5,11 @@ import com.vsharkovski.klox.TokenType.*
 /*
 Complete grammar:
     program        → declaration* EOF ;
-    declaration    → funDecl
+    declaration    → classDecl
+                   | funDecl
                    | varDecl
                    | statement ;
+    classDecl      → "class" IDENTIFIER "{" function* "}" ;
     funDecl        → "fun" function ;
     function       → IDENTIFIER "(" parameters? ")" block ;
     parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
@@ -66,18 +68,29 @@ class Parser(
         return statements
     }
 
-    private fun parseDeclaration(): Stmt? =
-        try {
-            if (advanceIfMatching(FUN))
-                parseFunction("function")
-            else if (advanceIfMatching(VAR))
-                parseVarDeclaration()
-            else
-                parseStatement()
-        } catch (error: ParseError) {
-            synchronize()
-            null
+    private fun parseDeclaration(): Stmt? = try {
+        if (advanceIfMatching(CLASS)) parseClassDeclaration()
+        else if (advanceIfMatching(FUN)) parseFunction("function")
+        else if (advanceIfMatching(VAR)) parseVarDeclaration()
+        else parseStatement()
+    } catch (error: ParseError) {
+        synchronize()
+        null
+    }
+
+    private fun parseClassDeclaration(): Stmt.Class {
+        val name = consumeOrError(IDENTIFIER, "Expect class name.")
+        consumeOrError(LEFT_BRACE, "Expect '{' before class body.")
+
+        val methods = mutableListOf<Stmt.Function>()
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            methods.add(parseFunction("method"))
         }
+
+        consumeOrError(RIGHT_BRACE, "Expect '}' after class body.")
+
+        return Stmt.Class(name, methods)
+    }
 
     private fun parseVarDeclaration(): Stmt.Var {
         val name = consumeOrError(IDENTIFIER, "Expect variable name.")
@@ -86,21 +99,13 @@ class Parser(
         return Stmt.Var(name, initializer)
     }
 
-    private fun parseStatement(): Stmt =
-        if (advanceIfMatching(BREAK))
-            parseBreakStatement()
-        else if (advanceIfMatching(FOR))
-            parseForStatement()
-        else if (advanceIfMatching(IF))
-            parseIfStatement()
-        else if (advanceIfMatching(RETURN))
-            parseReturnStatement()
-        else if (advanceIfMatching(WHILE))
-            parseWhileStatement()
-        else if (advanceIfMatching(LEFT_BRACE))
-            Stmt.Block(parseBlock())
-        else
-            parseExpressionStatement()
+    private fun parseStatement(): Stmt = if (advanceIfMatching(BREAK)) parseBreakStatement()
+    else if (advanceIfMatching(FOR)) parseForStatement()
+    else if (advanceIfMatching(IF)) parseIfStatement()
+    else if (advanceIfMatching(RETURN)) parseReturnStatement()
+    else if (advanceIfMatching(WHILE)) parseWhileStatement()
+    else if (advanceIfMatching(LEFT_BRACE)) Stmt.Block(parseBlock())
+    else parseExpressionStatement()
 
     private fun parseBreakStatement(): Stmt {
         val keyword = previous()
@@ -131,22 +136,23 @@ class Parser(
         val increment = if (check(RIGHT_PAREN)) null else parseExpression()
         consumeOrError(RIGHT_PAREN, "Expect ')' after for clause.")
 
-        val body = parseStatement()
+        // Parse the content of the for loop.
+        var body = parseStatement()
 
-        return Stmt.Block(
-            listOfNotNull(
-                initializer,
-                Stmt.While(
-                    condition ?: Expr.Literal(true),
-                    Stmt.Block(
-                        listOfNotNull(
-                            body,
-                            increment?.let { Stmt.Expression(increment) }
-                        )
-                    )
-                )
-            )
-        )
+        if (increment != null) {
+            // body = { content; increment }
+            body = Stmt.Block(listOf(body, Stmt.Expression(increment)))
+        }
+
+        // body = while (condition) { content; increment? }
+        body = Stmt.While(condition ?: Expr.Literal(true), body)
+
+        // Body = initializer; while (condition) { content; increment? }
+        if (initializer != null) {
+            body = Stmt.Block(listOf(initializer, body))
+        }
+
+        return body
     }
 
     private fun parseFunction(kind: String): Stmt.Function {
@@ -156,8 +162,7 @@ class Parser(
         val parameters = mutableListOf<Token>()
         if (!check(RIGHT_PAREN)) {
             do {
-                if (parameters.size >= 255)
-                    error(peek(), "Can't have more than 255 parameters.")
+                if (parameters.size >= 255) error(peek(), "Can't have more than 255 parameters.")
 
                 parameters.add(consumeOrError(IDENTIFIER, "Expect parameter name."))
             } while (advanceIfMatching(COMMA))
@@ -206,11 +211,9 @@ class Parser(
         return statements
     }
 
-    private fun parseExpression(): Expr =
-        parseCommaBlock()
+    private fun parseExpression(): Expr = parseCommaBlock()
 
-    private fun parseCommaBlock(): Expr =
-        parseLeftAssociativeBinary({ parseAssignment() }, COMMA)
+    private fun parseCommaBlock(): Expr = parseLeftAssociativeBinary({ parseAssignment() }, COMMA)
 
     private fun parseAssignment(): Expr {
         val expr = parseTernary()
@@ -242,8 +245,7 @@ class Parser(
                 expr = Expr.Ternary(expr, firstOperator, middleExpr, secondOperator, rightExpr)
             } else {
                 throw error(
-                    peek(),
-                    "Expect ':' after 'then' branch of ternary conditional operator '?:'."
+                    peek(), "Expect ':' after 'then' branch of ternary conditional operator '?:'."
                 )
             }
         }
@@ -251,32 +253,26 @@ class Parser(
         return expr
     }
 
-    private fun parseOr(): Expr =
-        parseLeftAssociativeBinary({ parseAnd() }, OR)
+    private fun parseOr(): Expr = parseLeftAssociativeBinary({ parseAnd() }, OR)
 
-    private fun parseAnd(): Expr =
-        parseLeftAssociativeBinary({ parseEquality() }, AND)
+    private fun parseAnd(): Expr = parseLeftAssociativeBinary({ parseEquality() }, AND)
 
-    private fun parseEquality(): Expr =
-        parseLeftAssociativeBinary({ parseComparison() }, BANG_EQUAL, EQUAL_EQUAL)
+    private fun parseEquality(): Expr = parseLeftAssociativeBinary({ parseComparison() }, BANG_EQUAL, EQUAL_EQUAL)
 
     private fun parseComparison(): Expr =
         parseLeftAssociativeBinary({ parseTerm() }, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)
 
-    private fun parseTerm(): Expr =
-        parseLeftAssociativeBinary({ parseFactor() }, MINUS, PLUS)
+    private fun parseTerm(): Expr = parseLeftAssociativeBinary({ parseFactor() }, MINUS, PLUS)
 
-    private fun parseFactor(): Expr =
-        parseLeftAssociativeBinary({ parseUnary() }, SLASH, STAR)
+    private fun parseFactor(): Expr = parseLeftAssociativeBinary({ parseUnary() }, SLASH, STAR)
 
-    private fun parseUnary(): Expr =
-        if (advanceIfMatching(BANG, MINUS)) {
-            val operator = previous()
-            val right = parseUnary()
-            Expr.Unary(operator, right)
-        } else {
-            parseCall()
-        }
+    private fun parseUnary(): Expr = if (advanceIfMatching(BANG, MINUS)) {
+        val operator = previous()
+        val right = parseUnary()
+        Expr.Unary(operator, right)
+    } else {
+        parseCall()
+    }
 
     private fun parseCall(): Expr {
         var expr = parsePrimary()
@@ -296,8 +292,7 @@ class Parser(
         val arguments = mutableListOf<Expr>()
         if (!check(RIGHT_PAREN)) {
             do {
-                if (arguments.size >= 255)
-                    error(peek(), "Can't have more than 255 arguments.")
+                if (arguments.size >= 255) error(peek(), "Can't have more than 255 arguments.")
 
                 // We parse on the level of 'assignment' instead of 'expression'
                 // because otherwise our commaBlock expression would consume all arguments
@@ -311,24 +306,23 @@ class Parser(
         return Expr.Call(callee, paren, arguments)
     }
 
-    private fun parsePrimary(): Expr =
-        if (advanceIfMatching(FALSE)) {
-            Expr.Literal(false)
-        } else if (advanceIfMatching(TRUE)) {
-            Expr.Literal(true)
-        } else if (advanceIfMatching(NIL)) {
-            Expr.Literal(null)
-        } else if (advanceIfMatching(NUMBER, STRING)) {
-            Expr.Literal(previous().literal)
-        } else if (advanceIfMatching(LEFT_PAREN)) {
-            val expr = parseExpression()
-            consumeOrError(RIGHT_PAREN, "Expect ')' after expression.")
-            Expr.Grouping(expr)
-        } else if (advanceIfMatching(IDENTIFIER)) {
-            Expr.Variable(previous())
-        } else {
-            throw error(peek(), "Expect expression.")
-        }
+    private fun parsePrimary(): Expr = if (advanceIfMatching(FALSE)) {
+        Expr.Literal(false)
+    } else if (advanceIfMatching(TRUE)) {
+        Expr.Literal(true)
+    } else if (advanceIfMatching(NIL)) {
+        Expr.Literal(null)
+    } else if (advanceIfMatching(NUMBER, STRING)) {
+        Expr.Literal(previous().literal)
+    } else if (advanceIfMatching(LEFT_PAREN)) {
+        val expr = parseExpression()
+        consumeOrError(RIGHT_PAREN, "Expect ')' after expression.")
+        Expr.Grouping(expr)
+    } else if (advanceIfMatching(IDENTIFIER)) {
+        Expr.Variable(previous())
+    } else {
+        throw error(peek(), "Expect expression.")
+    }
 
     /**
      * Parse a left-associative binary expression group.
@@ -338,8 +332,7 @@ class Parser(
      * and type_1, ..., type_k are the token types to match for this group.
      */
     private fun parseLeftAssociativeBinary(
-        nextHigherPrecedenceParseFn: () -> Expr,
-        vararg types: TokenType
+        nextHigherPrecedenceParseFn: () -> Expr, vararg types: TokenType
     ): Expr {
         var expr = nextHigherPrecedenceParseFn()
 
@@ -372,17 +365,13 @@ class Parser(
         throw error(peek(), errorMessage)
     }
 
-    private fun check(type: TokenType): Boolean =
-        if (isAtEnd()) false else peek().type == type
+    private fun check(type: TokenType): Boolean = if (isAtEnd()) false else peek().type == type
 
-    private fun isAtEnd(): Boolean =
-        peek().type == EOF
+    private fun isAtEnd(): Boolean = peek().type == EOF
 
-    private fun peek(): Token =
-        tokens[current]
+    private fun peek(): Token = tokens[current]
 
-    private fun previous(): Token =
-        tokens[current - 1]
+    private fun previous(): Token = tokens[current - 1]
 
     private fun error(token: Token, message: String): ParseError {
         Klox.error(token, message)

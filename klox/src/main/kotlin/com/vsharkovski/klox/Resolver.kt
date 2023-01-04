@@ -3,7 +3,7 @@ package com.vsharkovski.klox
 class Resolver(
     private val interpreter: Interpreter
 ) : Expr.Visitor<Unit>, Stmt.Visitor<Unit> {
-    private val scopes = ArrayDeque<MutableMap<String, Boolean>>()
+    private val scopes = mutableListOf<MutableMap<String, Boolean>>()
     private var currentFunction = FunctionType.NONE
     private var isInsideLoop = false
 
@@ -21,6 +21,11 @@ class Resolver(
     override fun visitBreakStmt(stmt: Stmt.Break) {
         if (!isInsideLoop)
             Klox.error(stmt.keyword, "Can't break if not inside a loop.")
+    }
+
+    override fun visitClassStmt(stmt: Stmt.Class) {
+        declare(stmt.name)
+        define(stmt.name)
     }
 
     override fun visitExpressionStmt(stmt: Stmt.Expression) =
@@ -101,7 +106,7 @@ class Resolver(
         resolve(expr.right)
 
     override fun visitVariableExpr(expr: Expr.Variable) {
-        if (!scopes.isEmpty() && scopes.last()[expr.name.lexeme] == false)
+        if (scopes.isNotEmpty() && scopes.last()[expr.name.lexeme] == false)
             Klox.error(expr.name, "Can't read local variable in its own initializer.")
 
         resolveLocal(expr, expr.name)
@@ -135,7 +140,7 @@ class Resolver(
     }
 
     private fun beginScope() {
-        scopes.addLast(mutableMapOf())
+        scopes.add(mutableMapOf())
     }
 
     private fun endScope() {

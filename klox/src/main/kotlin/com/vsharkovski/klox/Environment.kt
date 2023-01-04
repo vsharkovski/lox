@@ -37,6 +37,7 @@ class Environment(
     }
 
     fun getAt(distance: Int, name: String): Any? {
+        // Distance is 1 more than needed?
         val targetEnvironment = ancestor(distance)
         assert(targetEnvironment.values.containsKey(name))
         return targetEnvironment.values[name]
