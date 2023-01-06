@@ -69,6 +69,9 @@ class AstPrinterMultiline : Stmt.Visitor<String>, Expr.Visitor<String> {
             }
         }"
 
+    override fun visitGetExpr(expr: Expr.Get): String =
+        "Get:\n(object)\n${printIndented(expr.obj)}\nname: ${expr.name}"
+
     override fun visitGroupingExpr(expr: Expr.Grouping): String =
         "Group:\n${printIndented(expr.expression)}"
 
@@ -77,6 +80,9 @@ class AstPrinterMultiline : Stmt.Visitor<String>, Expr.Visitor<String> {
 
     override fun visitLogicalExpr(expr: Expr.Logical): String =
         "Logical: ${expr.operator.lexeme}\n(left)\n${printIndented(expr.left)}\n(right)\n${printIndented(expr.right)}"
+
+    override fun visitSetExpr(expr: Expr.Set): String =
+        "Set:\n(object)\n${printIndented(expr.obj)}\nname: ${expr.name}\n(value)\n${printIndented(expr.value)}"
 
     override fun visitTernaryExpr(expr: Expr.Ternary): String =
         "Ternary:\n(condition)\n${printIndented(expr.left)}\n(then)\n${printIndented(expr.middle)}\n(else)\n${

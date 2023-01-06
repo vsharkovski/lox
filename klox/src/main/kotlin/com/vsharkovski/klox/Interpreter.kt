@@ -232,6 +232,27 @@ class Interpreter(
         return callee.call(this, arguments)
     }
 
+    override fun visitGetExpr(expr: Expr.Get): Any? {
+        val obj = evaluate(expr.obj)
+        if (obj is KloxInstance) {
+            return obj.get(expr.name)
+        }
+
+        throw RuntimeError(expr.name, "Only instances have properties.")
+    }
+
+    override fun visitSetExpr(expr: Expr.Set): Any? {
+        val obj = evaluate(expr.obj)
+
+        if (obj is KloxInstance) {
+            val value = evaluate(expr.value)
+            obj.set(expr.name, value)
+            return value
+        } else {
+            throw RuntimeError(expr.name, "Only instances have fields.")
+        }
+    }
+
     override fun visitTernaryExpr(expr: Expr.Ternary): Any? {
         if (expr.firstOperator.type != QUESTION)
             throw RuntimeError(expr.firstOperator, "Operator must be ternary expression operator.")

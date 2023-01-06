@@ -33,7 +33,7 @@ Complete grammar:
     block          → "{" declaration "}" ;
     expression     → commaBlock ;
     commaBlock     → assignment ( "," assignment )* ;
-    assignment     → IDENTIFIER "=" assignment
+    assignment     → ( call "." )? IDENTIFIER "=" assignment
                    | ternary ;
     ternary        → logic_or ( "?" logic_or ":" logic_or )* ;
     logic_or       → logic_and ( "or" logic_and )* ;
@@ -44,7 +44,7 @@ Complete grammar:
     factor         → unary ( ( "/" | "*" ) unary )* ;
     unary          → ( "!" | "-" ) unary
                    | call ;
-    call           → primary ( "(" arguments? ")" )* ;
+    call           → primary ( "(" arguments? | "." IDENTIFIER ")" )* ;
     arguments      → assignment ( "," assignment )* ;
     primary        → "true" | "false" | "nil"
                    | NUMBER | STRING
@@ -222,9 +222,10 @@ class Parser(
             val token = previous()
             val value = parseAssignment()
 
-            if (expr is Expr.Variable) {
+            if (expr is Expr.Variable)
                 return Expr.Assign(expr.name, value)
-            }
+            else if (expr is Expr.Get)
+                return Expr.Set(expr.obj, expr.name, value)
 
             error(token, "Invalid assignment target.")
         }
@@ -280,6 +281,9 @@ class Parser(
         while (true) {
             if (advanceIfMatching(LEFT_PAREN)) {
                 expr = finishParseCall(expr)
+            } else if (advanceIfMatching(DOT)) {
+                val name = consumeOrError(IDENTIFIER, "Expect property name after '.'.")
+                expr = Expr.Get(expr, name)
             } else {
                 break
             }

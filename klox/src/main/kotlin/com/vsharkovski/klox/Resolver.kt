@@ -86,6 +86,9 @@ class Resolver(
             resolve(argument)
     }
 
+    override fun visitGetExpr(expr: Expr.Get) =
+        resolve(expr.obj)
+
     override fun visitGroupingExpr(expr: Expr.Grouping) =
         resolve(expr.expression)
 
@@ -94,6 +97,11 @@ class Resolver(
     override fun visitLogicalExpr(expr: Expr.Logical) {
         resolve(expr.left)
         resolve(expr.right)
+    }
+
+    override fun visitSetExpr(expr: Expr.Set) {
+        resolve(expr.value)
+        resolve(expr.obj)
     }
 
     override fun visitTernaryExpr(expr: Expr.Ternary) {
