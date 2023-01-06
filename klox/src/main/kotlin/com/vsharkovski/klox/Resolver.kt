@@ -3,8 +3,20 @@ package com.vsharkovski.klox
 class Resolver(
     private val interpreter: Interpreter
 ) : Expr.Visitor<Unit>, Stmt.Visitor<Unit> {
+    private enum class FunctionType {
+        NONE,
+        FUNCTION,
+        METHOD
+    }
+
+    private enum class ClassType {
+        NONE,
+        CLASS
+    }
+
     private val scopes = mutableListOf<MutableMap<String, Boolean>>()
     private var currentFunction = FunctionType.NONE
+    private var currentClass = ClassType.NONE
     private var isInsideLoop = false
 
     fun resolve(statements: List<Stmt>) {
@@ -24,8 +36,21 @@ class Resolver(
     }
 
     override fun visitClassStmt(stmt: Stmt.Class) {
+        val enclosingClass = currentClass
+        currentClass = ClassType.CLASS
+
         declare(stmt.name)
         define(stmt.name)
+
+        beginScope()
+        scopes.last()["this"] = true
+
+        for (method in stmt.methods)
+            resolveFunction(method, FunctionType.METHOD)
+
+        endScope()
+
+        currentClass = enclosingClass
     }
 
     override fun visitExpressionStmt(stmt: Stmt.Expression) =
@@ -110,6 +135,13 @@ class Resolver(
         resolve(expr.right)
     }
 
+    override fun visitThisExpr(expr: Expr.This) =
+        if (currentClass == ClassType.NONE) {
+            Klox.error(expr.keyword, "Can't use 'this' outside of a class.")
+        } else {
+            resolveLocal(expr, expr.keyword)
+        }
+
     override fun visitUnaryExpr(expr: Expr.Unary) =
         resolve(expr.right)
 
@@ -178,9 +210,4 @@ class Resolver(
             }
         }
     }
-}
-
-private enum class FunctionType {
-    NONE,
-    FUNCTION
 }

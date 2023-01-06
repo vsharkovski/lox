@@ -322,6 +322,8 @@ class Parser(
         val expr = parseExpression()
         consumeOrError(RIGHT_PAREN, "Expect ')' after expression.")
         Expr.Grouping(expr)
+    } else if (advanceIfMatching(THIS)) {
+        Expr.This(previous())
     } else if (advanceIfMatching(IDENTIFIER)) {
         Expr.Variable(previous())
     } else {

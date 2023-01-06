@@ -70,7 +70,14 @@ class Interpreter(
 
     override fun visitClassStmt(stmt: Stmt.Class) {
         environment.define(stmt.name.lexeme, null)
-        val klass = KloxClass(stmt.name.lexeme)
+
+        val methods = mutableMapOf<String, KloxFunction>()
+        for (method in stmt.methods) {
+            val function = KloxFunction(method, environment)
+            methods[method.name.lexeme] = function
+        }
+
+        val klass = KloxClass(stmt.name.lexeme, methods)
         environment.assign(stmt.name, klass)
     }
 
@@ -268,6 +275,9 @@ class Interpreter(
         else
             secondOption
     }
+
+    override fun visitThisExpr(expr: Expr.This): Any? =
+        lookUpVariable(expr.keyword, expr)
 
     private fun isTruthy(obj: Any?): Boolean =
         when (obj) {

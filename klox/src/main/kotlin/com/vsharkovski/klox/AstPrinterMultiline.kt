@@ -89,6 +89,8 @@ class AstPrinterMultiline : Stmt.Visitor<String>, Expr.Visitor<String> {
             printIndented(expr.right)
         }"
 
+    override fun visitThisExpr(expr: Expr.This): String = "This"
+
     override fun visitUnaryExpr(expr: Expr.Unary): String =
         "Unary: ${expr.operator.lexeme}, right:\n${printIndented(expr.right)}"
 

@@ -6,6 +6,12 @@ class KloxFunction(
 ) : KloxCallable {
     override val arity = declaration.params.size
 
+    fun bind(instance: KloxInstance): KloxFunction {
+        val environment = Environment(closure)
+        environment.define("this", instance)
+        return KloxFunction(declaration, environment)
+    }
+
     override fun call(interpreter: Interpreter, arguments: List<Any?>): Any? {
         val environment = Environment(closure)
         for (i in 0 until declaration.params.size)
