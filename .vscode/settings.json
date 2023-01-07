@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "*.pyde": "python",
-        "debug.h": "c"
-    }
-}
