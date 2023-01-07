@@ -12,7 +12,8 @@ class Resolver(
 
     private enum class ClassType {
         NONE,
-        CLASS
+        CLASS,
+        SUBCLASS
     }
 
     private val scopes = mutableListOf<MutableMap<String, Boolean>>()
@@ -43,6 +44,19 @@ class Resolver(
         declare(stmt.name)
         define(stmt.name)
 
+        if (stmt.superclass != null) {
+            if (stmt.name.lexeme == stmt.superclass.name.lexeme)
+                Klox.error(stmt.superclass.name, "A class can't inherit from itself.")
+
+            currentClass = ClassType.SUBCLASS
+            resolve(stmt.superclass)
+        }
+
+        if (stmt.superclass != null) {
+            beginScope()
+            scopes.last()["super"] = true
+        }
+
         beginScope()
         scopes.last()["this"] = true
 
@@ -55,6 +69,8 @@ class Resolver(
         }
 
         endScope()
+
+        if (stmt.superclass != null) endScope()
 
         currentClass = enclosingClass
     }
@@ -138,6 +154,16 @@ class Resolver(
         resolve(expr.value)
         resolve(expr.obj)
     }
+
+    override fun visitSuperExpr(expr: Expr.Super) =
+        when (currentClass) {
+            ClassType.NONE ->
+                Klox.error(expr.keyword, "Can't use 'super' outside of a class.")
+            ClassType.CLASS ->
+                Klox.error(expr.keyword, "Can't use 'super' in a class with no superclass.")
+            ClassType.SUBCLASS ->
+                resolveLocal(expr, expr.keyword)
+        }
 
     override fun visitTernaryExpr(expr: Expr.Ternary) {
         resolve(expr.left)

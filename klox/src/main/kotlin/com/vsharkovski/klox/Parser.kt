@@ -9,7 +9,8 @@ Complete grammar:
                    | funDecl
                    | varDecl
                    | statement ;
-    classDecl      → "class" IDENTIFIER "{" function* "}" ;
+    classDecl      → "class" IDENTIFIER ( "<" IDENTIFIER ))?
+                     "{" function* "}" ;
     funDecl        → "fun" function ;
     function       → IDENTIFIER "(" parameters? ")" block ;
     parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
@@ -46,10 +47,9 @@ Complete grammar:
                    | call ;
     call           → primary ( "(" arguments? | "." IDENTIFIER ")" )* ;
     arguments      → assignment ( "," assignment )* ;
-    primary        → "true" | "false" | "nil"
-                   | NUMBER | STRING
-                   | "(" expression ")"
-                   | IDENTIFIER ;
+    primary        → "true" | "false" | "nil" | "this"
+                   | NUMBER | STRING | IDENTIFIER | "(" expression ")"
+                   | "super" "." IDENTIFIER ;
  */
 
 class Parser(
@@ -80,6 +80,12 @@ class Parser(
 
     private fun parseClassDeclaration(): Stmt.Class {
         val name = consumeOrError(IDENTIFIER, "Expect class name.")
+
+        val superclass = if (advanceIfMatching(LESS)) {
+            consumeOrError(IDENTIFIER, "Expect superclass name.")
+            Expr.Variable(previous())
+        } else null
+
         consumeOrError(LEFT_BRACE, "Expect '{' before class body.")
 
         val methods = mutableListOf<Stmt.Function>()
@@ -89,7 +95,7 @@ class Parser(
 
         consumeOrError(RIGHT_BRACE, "Expect '}' after class body.")
 
-        return Stmt.Class(name, methods)
+        return Stmt.Class(name, superclass, methods)
     }
 
     private fun parseVarDeclaration(): Stmt.Var {
@@ -279,11 +285,11 @@ class Parser(
         var expr = parsePrimary()
 
         while (true) {
-            if (advanceIfMatching(LEFT_PAREN)) {
-                expr = finishParseCall(expr)
+            expr = if (advanceIfMatching(LEFT_PAREN)) {
+                finishParseCall(expr)
             } else if (advanceIfMatching(DOT)) {
                 val name = consumeOrError(IDENTIFIER, "Expect property name after '.'.")
-                expr = Expr.Get(expr, name)
+                Expr.Get(expr, name)
             } else {
                 break
             }
@@ -310,25 +316,31 @@ class Parser(
         return Expr.Call(callee, paren, arguments)
     }
 
-    private fun parsePrimary(): Expr = if (advanceIfMatching(FALSE)) {
-        Expr.Literal(false)
-    } else if (advanceIfMatching(TRUE)) {
-        Expr.Literal(true)
-    } else if (advanceIfMatching(NIL)) {
-        Expr.Literal(null)
-    } else if (advanceIfMatching(NUMBER, STRING)) {
-        Expr.Literal(previous().literal)
-    } else if (advanceIfMatching(LEFT_PAREN)) {
-        val expr = parseExpression()
-        consumeOrError(RIGHT_PAREN, "Expect ')' after expression.")
-        Expr.Grouping(expr)
-    } else if (advanceIfMatching(THIS)) {
-        Expr.This(previous())
-    } else if (advanceIfMatching(IDENTIFIER)) {
-        Expr.Variable(previous())
-    } else {
-        throw error(peek(), "Expect expression.")
-    }
+    private fun parsePrimary(): Expr =
+        if (advanceIfMatching(FALSE)) {
+            Expr.Literal(false)
+        } else if (advanceIfMatching(TRUE)) {
+            Expr.Literal(true)
+        } else if (advanceIfMatching(NIL)) {
+            Expr.Literal(null)
+        } else if (advanceIfMatching(SUPER)){
+            val keyword = previous()
+            consumeOrError(DOT, "Expect '.' after 'super'.")
+            val method = consumeOrError(IDENTIFIER, "Expect superclass method name.")
+            Expr.Super(keyword, method)
+        } else if (advanceIfMatching(THIS)) {
+            Expr.This(previous())
+        } else if (advanceIfMatching(NUMBER, STRING)) {
+            Expr.Literal(previous().literal)
+        } else if (advanceIfMatching(IDENTIFIER)) {
+            Expr.Variable(previous())
+        } else if (advanceIfMatching(LEFT_PAREN)) {
+            val expr = parseExpression()
+            consumeOrError(RIGHT_PAREN, "Expect ')' after expression.")
+            Expr.Grouping(expr)
+        } else {
+            throw error(peek(), "Expect expression.")
+        }
 
     /**
      * Parse a left-associative binary expression group.

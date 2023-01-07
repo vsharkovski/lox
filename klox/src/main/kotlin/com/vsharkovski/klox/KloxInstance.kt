@@ -8,7 +8,8 @@ class KloxInstance(private val klass: KloxClass) {
             // Return the field with this name.
             fields[name.lexeme]
         } else {
-            // Return the method with this name, or throw a runtime error.
+            // Return the method with this name, bound to this instance,
+            // or throw a runtime error.
             klass.findMethod(name.lexeme)?.bind(this)
                 ?: throw RuntimeError(name, "Undefined property '${name.lexeme}'.")
         }

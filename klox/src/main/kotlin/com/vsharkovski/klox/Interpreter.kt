@@ -69,7 +69,16 @@ class Interpreter(
     }
 
     override fun visitClassStmt(stmt: Stmt.Class) {
+        val superclass = stmt.superclass?.let { evaluate(it) }
+        if (superclass !is KloxClass?)
+            throw RuntimeError(stmt.superclass!!.name, "Superclass must be a class.")
+
         environment.define(stmt.name.lexeme, null)
+
+        if (superclass != null) {
+            environment = Environment(environment)
+            environment.define("super", superclass)
+        }
 
         val methods = mutableMapOf<String, KloxFunction>()
         for (method in stmt.methods) {
@@ -77,7 +86,12 @@ class Interpreter(
             methods[method.name.lexeme] = function
         }
 
-        val klass = KloxClass(stmt.name.lexeme, methods)
+        val klass = KloxClass(stmt.name.lexeme, superclass, methods)
+
+        if (superclass != null) {
+            environment = environment.enclosingEnvironment!!
+        }
+
         environment.assign(stmt.name, klass)
     }
 
@@ -258,6 +272,15 @@ class Interpreter(
         } else {
             throw RuntimeError(expr.name, "Only instances have fields.")
         }
+    }
+
+    override fun visitSuperExpr(expr: Expr.Super): Any {
+        val distance = locals[expr]!!
+        val superclass = environment.getAt(distance, "super") as KloxClass
+        val obj = environment.getAt(distance - 1, "this") as KloxInstance
+        val method = superclass.findMethod(expr.method.lexeme)
+        return method?.bind(obj)
+            ?: throw RuntimeError(expr.method, "Undefined property '${expr.method.lexeme}'")
     }
 
     override fun visitTernaryExpr(expr: Expr.Ternary): Any? {

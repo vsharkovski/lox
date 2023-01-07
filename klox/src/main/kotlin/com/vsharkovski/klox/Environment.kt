@@ -1,7 +1,7 @@
 package com.vsharkovski.klox
 
 class Environment(
-    private val enclosingEnvironment: Environment? = null
+    val enclosingEnvironment: Environment? = null
 ) {
     private val values = mutableMapOf<String, Any?>()
 
