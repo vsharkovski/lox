@@ -317,13 +317,13 @@ class Interpreter(
             left?.equals(right) ?: false
 
     private fun checkNumberOperand(operator: Token, operand: Any?) {
-        if (operand is Double) return
-        throw RuntimeError(operator, "Operand must be a number.")
+        if (operand !is Double)
+            throw RuntimeError(operator, "Operand must be a number.")
     }
 
     private fun checkNumberOperands(operator: Token, left: Any?, right: Any?) {
-        if (left is Double && right is Double) return
-        throw RuntimeError(operator, "Operands must be numbers.")
+        if (left !is Double || right !is Double)
+            throw RuntimeError(operator, "Operands must be numbers.")
     }
 
     private fun stringify(obj: Any?): String =
