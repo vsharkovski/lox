@@ -28,6 +28,7 @@ class Scanner(
     private var start: Int = 0
     private var current: Int = 0
     private var line: Int = 1
+    private var linePosition: Int = 0
 
     fun scanTokens(): List<Token> {
         while (!isAtEnd()) {
@@ -36,7 +37,7 @@ class Scanner(
             scanToken()
         }
 
-        tokens.add(Token(EOF, "", null, line))
+        tokens.add(Token(EOF, "", null, line, linePosition))
         return tokens
     }
 
@@ -67,7 +68,10 @@ class Scanner(
                 addToken(SLASH)
             }
             ' ', '\r', '\t' -> Unit
-            '\n' -> line++
+            '\n' -> {
+                line++
+                linePosition = 0
+            }
             '"' -> scanString()
             else -> {
                 if (c.isDigit()) {
@@ -83,7 +87,10 @@ class Scanner(
 
     private fun scanString() {
         while (peek() != '"') {
-            if (peek() == '\n') line++
+            if (peek() == '\n') {
+                line++
+                linePosition = 0
+            }
             advance()
         }
 
@@ -131,6 +138,7 @@ class Scanner(
             val c = advance()
             if (c == '\n') {
                 line++
+                linePosition = 0
             } else if (c == '/' && advanceIfMatching('*')) {
                 // Entering a block comment.
                 depth++
@@ -153,12 +161,15 @@ class Scanner(
     private fun isAtEnd(): Boolean =
         current >= source.length
 
-    private fun advance(): Char =
-        source[current++]
+    private fun advance(): Char {
+        linePosition++
+        return source[current++]
+    }
 
     private fun advanceIfMatching(expected: Char): Boolean {
         if (isAtEnd() || source[current] != expected) return false
         current++
+        linePosition++
         return true
     }
 
@@ -170,18 +181,17 @@ class Scanner(
 
     private fun addToken(type: TokenType, literal: Any? = null) {
         val text = source.substring(start, current)
-        tokens.add(Token(type, text, literal, line))
+        tokens.add(Token(type, text, literal, line, linePosition))
     }
-
 }
 
-fun Char.isAsciiDigit() =
+private fun Char.isAsciiDigit() =
     this in '0'..'9'
 
-fun Char.isAlpha() =
+private fun Char.isAlpha() =
     this in 'a'..'z'
             || this in 'A'..'Z'
             || this == '_'
 
-fun Char.isAlphaNumeric() =
+private fun Char.isAlphaNumeric() =
     this.isAsciiDigit() || this.isAlpha()
