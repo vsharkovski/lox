@@ -73,7 +73,7 @@ class Interpreter(
 
         val methods = mutableMapOf<String, KloxFunction>()
         for (method in stmt.methods) {
-            val function = KloxFunction(method, environment)
+            val function = KloxFunction(method, environment, method.name.lexeme == "init")
             methods[method.name.lexeme] = function
         }
 
@@ -88,7 +88,7 @@ class Interpreter(
     }
 
     override fun visitFunctionStmt(stmt: Stmt.Function) {
-        val function = KloxFunction(stmt, environment)
+        val function = KloxFunction(stmt, environment, false)
         environment.define(stmt.name.lexeme, function)
     }
 

@@ -6,9 +6,17 @@ class KloxClass(
 ) : KloxCallable {
     fun findMethod(name: String): KloxFunction? = methods[name]
 
-    override val arity: Int = 0
+    override val arity: Int = findMethod("init")?.arity ?: 0
 
-    override fun call(interpreter: Interpreter, arguments: List<Any?>): Any = KloxInstance(this)
+    override fun call(interpreter: Interpreter, arguments: List<Any?>): Any {
+        // Create instance whose class is this object.
+        val instance = KloxInstance(this)
+
+        // If an initializer method is present, immediately bind it and call it.
+        findMethod("init")?.bind(instance)?.call(interpreter, arguments)
+
+        return instance
+    }
 
     override fun toString(): String = name
 }

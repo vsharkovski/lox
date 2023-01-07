@@ -5,12 +5,12 @@ class KloxInstance(private val klass: KloxClass) {
 
     fun get(name: Token): Any? =
         if (fields.containsKey(name.lexeme)) {
+            // Return the field with this name.
             fields[name.lexeme]
         } else {
-            klass.findMethod(name.lexeme)?.bind(this) ?: throw RuntimeError(
-                name,
-                "Undefined property '${name.lexeme}'."
-            )
+            // Return the method with this name, or throw a runtime error.
+            klass.findMethod(name.lexeme)?.bind(this)
+                ?: throw RuntimeError(name, "Undefined property '${name.lexeme}'.")
         }
 
     fun set(name: Token, value: Any?) {

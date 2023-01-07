@@ -6,6 +6,7 @@ class Resolver(
     private enum class FunctionType {
         NONE,
         FUNCTION,
+        INITIALIZER,
         METHOD
     }
 
@@ -45,8 +46,13 @@ class Resolver(
         beginScope()
         scopes.last()["this"] = true
 
-        for (method in stmt.methods)
-            resolveFunction(method, FunctionType.METHOD)
+        for (method in stmt.methods) {
+            val declaration =
+                if (method.name.lexeme == "init") FunctionType.INITIALIZER
+                else FunctionType.METHOD
+
+            resolveFunction(method, declaration)
+        }
 
         endScope()
 
@@ -74,8 +80,12 @@ class Resolver(
         if (currentFunction == FunctionType.NONE)
             Klox.error(stmt.keyword, "Can't return from top-level code.")
 
-        if (stmt.value != null)
+        if (stmt.value != null) {
+            if (currentFunction == FunctionType.INITIALIZER) {
+                Klox.error(stmt.keyword, "Can't return a value from an initializer.")
+            }
             resolve(stmt.value)
+        }
     }
 
     override fun visitVarStmt(stmt: Stmt.Var) {

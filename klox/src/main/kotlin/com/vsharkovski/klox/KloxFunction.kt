@@ -2,14 +2,19 @@ package com.vsharkovski.klox
 
 class KloxFunction(
     private val declaration: Stmt.Function,
-    private val closure: Environment
+    private val closure: Environment,
+    private val isInitializer: Boolean
 ) : KloxCallable {
     override val arity = declaration.params.size
 
+    /**
+     * Generate a function with an environment where 'this'
+     * is the given instance.
+     */
     fun bind(instance: KloxInstance): KloxFunction {
         val environment = Environment(closure)
         environment.define("this", instance)
-        return KloxFunction(declaration, environment)
+        return KloxFunction(declaration, environment, isInitializer)
     }
 
     override fun call(interpreter: Interpreter, arguments: List<Any?>): Any? {
@@ -20,10 +25,12 @@ class KloxFunction(
         try {
             interpreter.executeBlock(declaration.body, environment)
         } catch (returnValue: Return) {
-            return returnValue.value
+            return if (isInitializer) closure.getAt(0, "this")
+            else returnValue.value
         }
 
-        return null
+        return if (isInitializer) closure.getAt(0, "this")
+        else null
     }
 
     override fun toString(): String = "<fn ${declaration.name.lexeme}>"
