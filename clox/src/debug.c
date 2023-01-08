@@ -5,10 +5,23 @@
 void disassembleChunk(Chunk* chunk, const char* name)
 {
     printf("== %s ==\n", name);
-
+    
+    int lineIndex = 0;
+    ChunkLineInfo lineInfo = chunk->lines.info[lineIndex];
+    // In lineInfo.count we track how many instructions are remaining in this line.
+    
     for (int offset = 0; offset < chunk->count;)
     {
-        offset = disassembleInstruction(chunk, offset);
+        bool changedLine = false;
+        lineInfo.count--;
+        if (lineInfo.count == 0)
+        {
+            lineIndex++;
+            lineInfo = chunk->lines.info[lineIndex];
+            changedLine = true;
+        }
+
+        offset = disassembleInstruction(chunk, offset, (offset == 0 || changedLine) ? lineInfo.number : -1);
     }
 }
 
@@ -27,13 +40,14 @@ static int constantInstruction(const char* name, Chunk* chunk, int offset)
     return offset + 2;
 }
 
-int disassembleInstruction(Chunk* chunk, int offset)
+int disassembleInstruction(Chunk* chunk, int offset, int lineNumber)
 {
     printf("%04d ", offset);
-    if (offset > 0 && chunk->lines[offset] == chunk->lines[offset - 1]) {
+    if (lineNumber == -1) {
+        // No line number passed.
         printf("     ");
     } else {
-        printf("%4d ", chunk->lines[offset]);
+        printf("%4d ", lineNumber);
     }
 
     uint8_t instruction = chunk->code[offset];

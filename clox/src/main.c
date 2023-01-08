@@ -12,9 +12,14 @@ int main(int argc, const char* argv[])
     writeChunk(&chunk, constant, 5);
 
     writeChunk(&chunk, OP_RETURN, 5);
+    writeChunk(&chunk, OP_RETURN, 5);
+    writeChunk(&chunk, OP_RETURN, 5);
 
     writeChunk(&chunk, OP_RETURN, 7);
     
+    writeChunk(&chunk, OP_RETURN, 11);
+    writeChunk(&chunk, OP_RETURN, 11);
+
     disassembleChunk(&chunk, "test chunk");
     
     freeChunk(&chunk);
