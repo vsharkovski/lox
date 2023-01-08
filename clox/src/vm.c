@@ -100,6 +100,7 @@ InterpretResult interpret(const char* source)
 
     InterpretResult result = run();
 
+    // Clean up and return OK signal.
     freeChunk(&chunk);
     return INTERPRET_OK;
 }
