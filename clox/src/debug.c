@@ -45,7 +45,7 @@ int disassembleInstruction(Chunk* chunk, int offset, int lineNumber)
     printf("%04d ", offset);
     if (lineNumber == -1) {
         // No line number passed.
-        printf("     ");
+        printf("   | ");
     } else {
         printf("%4d ", lineNumber);
     }
