@@ -6,7 +6,14 @@ int main(int argc, const char* argv[])
 {
     Chunk chunk;
     initChunk(&chunk);
-    writeChunk(&chunk, OP_RETURN);
+
+    int constant = addConstant(&chunk, 1.2);
+    writeChunk(&chunk, OP_CONSTANT, 5);
+    writeChunk(&chunk, constant, 5);
+
+    writeChunk(&chunk, OP_RETURN, 5);
+
+    writeChunk(&chunk, OP_RETURN, 7);
     
     disassembleChunk(&chunk, "test chunk");
     
