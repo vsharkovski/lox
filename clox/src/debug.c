@@ -7,21 +7,21 @@ void disassembleChunk(Chunk* chunk, const char* name)
     printf("== %s ==\n", name);
     
     int lineIndex = 0;
-    ChunkLineInfo lineInfo = chunk->lines.info[lineIndex];
+    ChunkLineData lineData = chunk->lines.data[lineIndex];
     // In lineInfo.count we track how many instructions are remaining in this line.
     
     for (int offset = 0; offset < chunk->count;)
     {
         bool changedLine = false;
-        lineInfo.count--;
-        if (lineInfo.count == 0)
+        lineData.count--;
+        if (lineData.count == 0)
         {
             lineIndex++;
-            lineInfo = chunk->lines.info[lineIndex];
+            lineData = chunk->lines.data[lineIndex];
             changedLine = true;
         }
 
-        offset = disassembleInstruction(chunk, offset, (offset == 0 || changedLine) ? lineInfo.number : -1);
+        offset = disassembleInstruction(chunk, offset, (offset == 0 || changedLine) ? lineData.number : -1);
     }
 }
 

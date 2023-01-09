@@ -22,7 +22,7 @@ typedef struct
 {
     int number;
     int count;
-} ChunkLineInfo;
+} ChunkLineData;
 
 /**
  * @brief Contains line information for each line with at least one instruction.
@@ -31,7 +31,7 @@ typedef struct
 {
     int capacity;
     int count;
-    ChunkLineInfo* info;
+    ChunkLineData* data;
 } ChunkLines;
 
 /**

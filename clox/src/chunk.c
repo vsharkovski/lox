@@ -4,50 +4,50 @@
 #include "memory.h"
 
 /**
- * @brief Initialize chunk line info.
+ * @brief Initialize chunk line data.
  */
 static void initChunkLines(ChunkLines* lines)
 {
     lines->capacity = 0;
     lines->count = 0;
-    lines->info = NULL;
+    lines->data = NULL;
 }
 
 /**
- * @brief Free chunk line info from memory. 
+ * @brief Free chunk line data from memory. 
  */
 static void freeChunkLines(ChunkLines* lines)
 {
-    FREE_ARRAY(ChunkLineInfo, lines->info, lines->capacity);
+    FREE_ARRAY(ChunkLineData, lines->data, lines->capacity);
     initChunkLines(lines);
 }
 
 /**
  * @brief Update line info given the line number of a byte currently being written.
  */
-static inline void addLineInfo(ChunkLines* lines, int lineNumber)
+static inline void addLineData(ChunkLines* lines, int lineNumber)
 {
-    if (lines->count == 0 || lines->info[lines->count - 1].number != lineNumber)
+    if (lines->count == 0 || lines->data[lines->count - 1].number != lineNumber)
     {
-        // Last line number is not this bytes's. Add new line info.
+        // Last line number is not this bytes's. Add new line data.
         if (lines->count == lines->capacity)
         {
             // Not enough space in the allocated array. Grow the array to make room.
             int oldCapacity = lines->capacity;
             lines->capacity = GROW_CAPACITY(oldCapacity);
-            lines->info = GROW_ARRAY(ChunkLineInfo, lines->info, oldCapacity, lines->capacity);
+            lines->data = GROW_ARRAY(ChunkLineData, lines->data, oldCapacity, lines->capacity);
         }
 
-        ChunkLineInfo* lineInfo = &lines->info[lines->count];
-        lineInfo->number = lineNumber;
-        lineInfo->count = 1;
+        ChunkLineData* lineData = &lines->data[lines->count];
+        lineData->number = lineNumber;
+        lineData->count = 1;
 
         lines->count++;
     }
     else
     {
         // Increase byte count for this line.
-        lines->info[lines->count - 1].count++;
+        lines->data[lines->count - 1].count++;
     }
 }
 
@@ -90,7 +90,7 @@ void writeChunk(Chunk* chunk, uint8_t byte, int line)
 
     chunk->code[chunk->count] = byte;
     chunk->count++;
-    addLineInfo(&chunk->lines, line);
+    addLineData(&chunk->lines, line);
 }
 
 /**
@@ -117,7 +117,7 @@ int getLine(Chunk* chunk, int offset)
     // Jump forward 'offset' times and keep track which line we are at.
     while (offset > 0)
     {
-        int instructionsInLine = chunk->lines.info[lineIndex].count;
+        int instructionsInLine = chunk->lines.data[lineIndex].count;
 
         if (offset - instructionsInLine >= 0)
         {
@@ -132,5 +132,5 @@ int getLine(Chunk* chunk, int offset)
         }
     }
 
-    return chunk->lines.info[lineIndex].number;
+    return chunk->lines.data[lineIndex].number;
 }
