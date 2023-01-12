@@ -32,7 +32,7 @@ void freeTable(Table* table)
  */
 static Entry* findEntry(Entry* entries, int capacity, ObjString* key)
 {
-    uint32_t index = key->hash % capacity;
+    int index = key->hash % capacity;
     Entry* tombstone = NULL; // The first tombstone we pass.
 
     // Do linear probing.
@@ -193,7 +193,7 @@ ObjString* tableFindString(Table* table, const char* chars, int length, uint32_t
 {
     if (table->count == 0) return NULL;
 
-    uint32_t index = hash % table->capacity;
+    int index = hash % table->capacity;
 
     while (true)
     {
@@ -212,7 +212,7 @@ ObjString* tableFindString(Table* table, const char* chars, int length, uint32_t
                 return entry->key;
             }
 
-            index = index+1;
+            index++;
         }
 
         index = 0;
