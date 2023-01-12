@@ -51,6 +51,7 @@ static uint32_t hashString(const char* key, int length)
         hash ^= (uint8_t)key[i];
         hash *= 16777619;
     }
+    return hash;
 }
 
 /**
