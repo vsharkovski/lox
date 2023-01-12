@@ -135,6 +135,26 @@ static void consume(TokenType type, const char* message)
 }
 
 /**
+ * @brief Check if next token has given type. 
+ */
+static bool check(TokenType type)
+{
+    return parser.current.type == type;
+}
+
+/**
+ * @brief If next token has given type, consume it.
+ * @return True if next token had given type and was consumed.
+ * @return False otherwise.
+ */
+static bool match(TokenType type)
+{
+    if (!check(type)) return false;
+    advance();
+    return true;
+}
+
+/**
  * @brief Write a byte to the current chunk.
  */
 static void emitByte(uint8_t byte)
@@ -200,6 +220,8 @@ static void endCompiler()
 }
 
 static void expression();
+static void statement();
+static void declaration();
 static ParseRule* getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
@@ -395,6 +417,86 @@ static void expression()
 }
 
 /**
+ * @brief Parse an expression statement.
+ */
+static void expressionStatement()
+{
+    expression();
+    consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
+    emitByte(OP_POP);
+}
+
+/**
+ * @brief Parse a print statement.
+ * It is assumed that the print keyword has been consumed.
+ */
+static void printStatement()
+{
+    expression();
+    consume(TOKEN_SEMICOLON, "Expect ';' after value.");
+    emitByte(OP_PRINT);
+}
+
+/**
+ * @brief Synchronize to exit panic mode.
+ */
+static void synchronize()
+{
+    parser.panicMode = false;
+
+    // Skip tokens until something that looks like
+    // a statement boundary.
+    while (parser.current.type != TOKEN_EOF)
+    {
+        if (parser.previous.type == TOKEN_SEMICOLON) return;
+
+        switch (parser.current.type)
+        {
+            case TOKEN_CLASS:
+            case TOKEN_FUN:
+            case TOKEN_VAR:
+            case TOKEN_FOR:
+            case TOKEN_IF:
+            case TOKEN_WHILE:
+            case TOKEN_PRINT:
+            case TOKEN_RETURN:
+                return;
+            
+            default:
+                ; // Do nothing.
+        }
+
+        advance();
+    }
+}
+
+/**
+ * @brief Parse a declaration.
+ */
+static void declaration()
+{
+    statement();
+
+    // If we hit a compile error while parsing the previous statement,
+    // we entered panic mode. If so, synchronize.
+    if (parser.panicMode) synchronize();
+}
+
+/**
+ * @brief Parse a statement.
+ */
+static void statement()
+{
+    if (match(TOKEN_PRINT))
+    {
+        printStatement();
+    }
+    else
+    {
+        expressionStatement();
+    }
+}
+/**
  * @brief Compile source into a chunk.
  * @return True if there was no error.
  * @return False if there was a parser error.
@@ -408,8 +510,12 @@ bool compile(const char* source, Chunk* chunk)
     parser.panicMode = false;
 
     advance();
-    expression();
-    consume(TOKEN_EOF, "Expect end of expression.");
+    
+    while (!match(TOKEN_EOF))
+    {
+        declaration();
+    }
+
     endCompiler();
     return !parser.hadError;
 }

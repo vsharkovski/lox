@@ -60,8 +60,8 @@ static char peekNext()
 
 /**
  * @brief If a character is pointed at, advance over it.
- * @return true if character matched and advanced.
- * @return false if character did not match did not advance.
+ * @return True if character matched and advanced.
+ * @return False if character did not match and did not advance.
  */
 static bool match(char expected)
 {
